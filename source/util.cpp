@@ -204,14 +204,14 @@ void Util::AddDetour()
 static bool g_pShouldLoad = false;
 bool Util::ShouldLoad()
 {
-	if (CommandLine()->FindParm("-holylibexists") && !g_pShouldLoad) // Don't set this manually!
+	if (CommandLine()->FindParm("-holytestexists") && !g_pShouldLoad) // Don't set this manually!
 		return false;
 
 	if (g_pShouldLoad)
 		return true;
 
 	g_pShouldLoad = true;
-	CommandLine()->AppendParm("-holylibexists", "true");
+	CommandLine()->AppendParm("-holytestexists", "true");
 
 	return true;
 }
