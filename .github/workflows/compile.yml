@@ -1,0 +1,42 @@
+name: Build Plugin
+
+on: 
+  push:
+    paths:
+      - '.github/workflows/compile.yml'
+      - 'source/**'
+      - 'libs/**'
+      - 'premake5.lua'
+      - '!source/public/README.md'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: RaphaelIT7/gmod-common-module-base/.github/workflows/compile.yml@workflow
+    with:
+      PROJECT_NAME: "holytest"
+      BUILD_64x: "true"
+      REALM: "sv"
+      LINUX_FILEEXTENTION: "so"
+      BUILD_WINDOWS: "false"
+      ARTIFACT_EXPIRE: "1"
+      SOURCESDK_MINIMAL: "RaphaelIT7/sourcesdk-minimal"
+      SOURCESDK_MINIMAL_BRANCH: "patch-5"
+      SOURCESDK_MINIMAL_64XBRANCH: "x86-64-patch-1"
+      GARRYSMOD_COMMON: "RaphaelIT7/garrysmod_common"
+
+  build_testingarea:
+    uses: RaphaelIT7/gmod-common-module-base/.github/workflows/compile.yml@workflow
+    secrets: inherit
+    with:
+      PROJECT_NAME: "holytest"
+      BUILD_64x: "true"
+      REALM: "sv"
+      LINUX_FILEEXTENTION: "so"
+      BUILD_WINDOWS: "false"
+      UPLOAD: "pterodactyl"
+      SOURCESDK_MINIMAL: "RaphaelIT7/sourcesdk-minimal"
+      SOURCESDK_MINIMAL_BRANCH: "patch-5"
+      SOURCESDK_MINIMAL_64XBRANCH: "x86-64-patch-1"
+      GARRYSMOD_COMMON: "RaphaelIT7/garrysmod_common"
