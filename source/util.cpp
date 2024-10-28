@@ -1,5 +1,6 @@
 #include "util.h"
 #include <string>
+#include "detours.h"
 #include "GarrysMod/InterfacePointers.hpp"
 #include "sourcesdk/baseclient.h"
 #include "iserver.h"
@@ -10,7 +11,6 @@
 GarrysMod::Lua::IUpdatedLuaInterface* g_Lua;
 IVEngineServer* engine;
 CGlobalEntityList* Util::entitylist = NULL;
-CUserMessages* Util::pUserMessages;
 
 void Util::StartTable() {
 	g_Lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
@@ -154,9 +154,6 @@ void Util::AddDetour()
 	Detour::CheckValue("get interface", "IVEngineServer", engineserver != NULL);
 
 	SourceSDK::FactoryLoader server_loader("server");
-	pUserMessages = Detour::ResolveSymbol<CUserMessages>(server_loader, Symbols::UsermessagesSym);
-	Detour::CheckValue("get class", "usermessages", pUserMessages != NULL);
-
 	if (g_pModuleManager.GetAppFactory())
 		servergameents = (IServerGameEnts*)g_pModuleManager.GetGameFactory()(INTERFACEVERSION_SERVERGAMEENTS, NULL);
 	else
@@ -231,6 +228,23 @@ IRecipientFilter* Get_IRecipientFilter(int iStackPos, bool bError)
 		g_Lua->ThrowError("Tried to use a NULL RecipientFilter!");
 
 	return pFilter;
+}
+
+IConVar* Get_IConVar(int iStackPos, bool bError)
+{
+	if (!g_Lua->IsType(iStackPos, GarrysMod::Lua::Type::ConVar))
+	{
+		if (bError)
+			g_Lua->ThrowError("Tried to use something that wasn't a Convar!");
+
+		return NULL;
+	}
+
+	IConVar* pConVar = g_Lua->GetUserType<IConVar>(iStackPos, GarrysMod::Lua::Type::ConVar);
+	if (!pConVar && bError)
+		g_Lua->ThrowError("Tried to use a NULL ConVar!");
+
+	return pConVar;
 }
 
 Vector* Get_Vector(int iStackPos, bool bError)

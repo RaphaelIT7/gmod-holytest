@@ -1,6 +1,5 @@
 #include "interface.h"
 #include <vector>
-#include "detours.h"
 #include "public/imodule.h"
 
 class CModuleManager;

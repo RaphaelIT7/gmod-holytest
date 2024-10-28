@@ -1,19 +1,13 @@
-#include <GarrysMod/FactoryLoader.hpp>
 #include <GarrysMod/Lua/Interface.h>
-#include "filesystem.h"
 #include "plugin.h"
 #include "lua.h"
 #include <tier1.h>
 #include <tier2/tier2.h>
-#include <GarrysMod/Symbols.hpp>
 #include <GarrysMod/Lua/LuaShared.h>
 #include "module.h"
-#include "player.h"
-#include "tier0/icommandline.h"
-#include "vprof.h"
-
-#define DEDICATED
-#include "vstdlib/jobthread.h"
+#include "detours.h"
+#include <playerinfomanager.h>
+#include <GarrysMod/InterfacePointers.hpp>
 
 // The plugin is a static singleton that is exported as an interface
 CServerPlugin g_HolyTestServerPlugin;
@@ -26,14 +20,6 @@ IServerPluginCallbacks* GetHolyLibPlugin()
 #else
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CServerPlugin, IServerPluginCallbacks, INTERFACEVERSION_ISERVERPLUGINCALLBACKS, g_HolyTestServerPlugin);
 #endif
-
-#ifdef ARCHITECTURE_X86
-static void DumpSearchpaths(const CCommand& args)
-{
-	g_pFullFileSystem->PrintSearchPaths();
-}
-static ConCommand path("path", DumpSearchpaths, "Dumps the searchpaths", 0);
-#endif // Trying to workaround this one command breaking on 32x :/
 
 //---------------------------------------------------------------------------------
 // Purpose: constructor/destructor
@@ -74,14 +60,12 @@ CGlobalVars *gpGlobals = NULL;
 static bool bIgnoreNextUnload = false;
 bool CServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
-	VPROF_BUDGET("HolyLib - CServerPlugin::Load", VPROF_BUDGETGROUP_HOLYLIB);
-
-	Msg("--- HolyLib Plugin loading ---\n");
+	Msg("--- HolyTest Plugin loading ---\n");
 
 	if (!Util::ShouldLoad())
 	{
-		Msg("HolyLib already exists? Stopping.\n");
-		Msg("--- HolyLib Plugin finished loading ---\n");
+		Msg("HolyTest already exists? Stopping.\n");
+		Msg("--- HolyTest Plugin finished loading ---\n");
 		bIgnoreNextUnload = true;
 		return false; // What if we return false?
 	}
@@ -90,9 +74,6 @@ bool CServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn g
 	{
 		ConnectTier1Libraries(&interfaceFactory, 1);
 		ConnectTier2Libraries(&interfaceFactory, 1);
-	#if ARCHITECTURE_IS_X86
-		ConnectTier3Libraries(&interfaceFactory, 1);
-	#endif
 
 		engine = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, NULL);
 	} else {
@@ -119,28 +100,6 @@ bool CServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn g
 	g_pModuleManager.Init();
 	g_pModuleManager.InitDetour(false);
 
-#if ARCHITECTURE_IS_X86_64
-	if (CommandLine()->FindParm("-holylib_debug_forceregister"))
-#endif
-	{
-#if ARCHITECTURE_IS_X86
-		ConVar* pPath = cvar->FindVar("path");
-		if (pPath)
-			cvar->UnregisterConCommand(pPath);
-#endif
-
-		ConVar_Register(); // ConVars currently cause a crash on level shutdown. I probably need to find some hidden vtable function AGAIN.
-	}
-	/*
-	 * Debug info about the crash from what I could find(could be wrong):
-	 * - Where: engine.so
-	 * - Offset: 0x106316
-	 * - Manifest: 8648260017074424678
-	 * - Which function: CUtlLinkedList<T,S,ML,I,M>::AllocInternal( bool multilist )
-	 * - Which line (Verify): typename M::Iterator_t it = m_Memory.IsValidIterator( m_LastAlloc ) ? m_Memory.Next( m_LastAlloc ) : m_Memory.First();
-	 * - Why: I have no Idea. Maybe the class is different in our sdk?
-	 */
-
 	Msg("--- HolyLib Plugin finished loading ---\n");
 
 	return true;
@@ -151,8 +110,6 @@ bool CServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn g
 //---------------------------------------------------------------------------------
 void CServerPlugin::Unload(void)
 {
-	VPROF_BUDGET("HolyLib - CServerPlugin::Unload", VPROF_BUDGETGROUP_HOLYLIB);
-
 	if (bIgnoreNextUnload)
 	{
 		bIgnoreNextUnload = false;
@@ -163,18 +120,8 @@ void CServerPlugin::Unload(void)
 	Detour::Remove(0);
 	Detour::ReportLeak();
 
-#if ARCHITECTURE_IS_X86_64
-	if (CommandLine()->FindParm("-holylib_debug_forceregister"))
-#endif
-	{
-		ConVar_Unregister();
-	}
-
 	DisconnectTier1Libraries();
 	DisconnectTier2Libraries();
-#if ARCHITECTURE_IS_X86
-	DisconnectTier3Libraries();
-#endif
 }
 
 //---------------------------------------------------------------------------------
@@ -197,9 +144,9 @@ void CServerPlugin::UnPause(void)
 const char* CServerPlugin::GetPluginDescription(void)
 {
 #if GITHUB_RUN_DATA == 0 // DATA should always fallback to 0. We will set it to 1 in releases.
-	return "HolyLib Serverplugin V0.6 DEV (Workflow: " GITHUB_RUN_NUMBER ")";
+	return "HolyTest Serverplugin V0.1 DEV (Workflow: " GITHUB_RUN_NUMBER ")";
 #else
-	return "HolyLib Serverplugin V0.6";
+	return "HolyTest Serverplugin V0.1";
 #endif
 }
 
@@ -216,7 +163,6 @@ void CServerPlugin::LevelInit(char const *pMapName)
 //---------------------------------------------------------------------------------
 bool CServerPlugin::LuaInit()
 {
-	VPROF_BUDGET("HolyLib - CServerPlugin::LuaInit", VPROF_BUDGETGROUP_HOLYLIB);
 	GarrysMod::Lua::ILuaInterface* LUA = Lua::GetRealm(GarrysMod::Lua::State::SERVER);
 	if (LUA == nullptr) {
 		Msg("Failed to get ILuaInterface! (Realm: Server)\n");
@@ -233,7 +179,6 @@ bool CServerPlugin::LuaInit()
 //---------------------------------------------------------------------------------
 void CServerPlugin::LuaShutdown()
 {
-	VPROF_BUDGET("HolyLib - CServerPlugin::LuaShutdown", VPROF_BUDGETGROUP_HOLYLIB);
 	Lua::Shutdown();
 }
 
@@ -243,7 +188,6 @@ void CServerPlugin::LuaShutdown()
 //---------------------------------------------------------------------------------
 void CServerPlugin::ServerActivate(edict_t *pEdictList, int edictCount, int clientMax)
 {
-	VPROF_BUDGET("HolyLib - CServerPlugin::ServerActivate", VPROF_BUDGETGROUP_HOLYLIB);
 	if (!g_Lua) {
 		LuaInit();
 	}
@@ -257,7 +201,6 @@ void CServerPlugin::ServerActivate(edict_t *pEdictList, int edictCount, int clie
 //---------------------------------------------------------------------------------
 void CServerPlugin::GameFrame(bool simulating)
 {
-	VPROF_BUDGET("HolyLib - CServerPlugin::GameFrame", VPROF_BUDGETGROUP_HOLYLIB);
 	g_pModuleManager.Think(simulating);
 }
 
