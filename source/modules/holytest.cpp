@@ -115,19 +115,20 @@ void CHolyTestModule::LuaInit(bool bServerInit)
 	Util::FinishTable("holytest");
 
 	g_Lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-		g_Lua->GetField(-1, "Listen");
-			g_Lua->PushString("vote_cast");
-			g_Lua->CallFunctionProtected(1, 0, true);
-			CGameEventDescriptor* descriptor = pManager->GetEventDescriptor("vote_cast");
-			FOR_EACH_VEC(descriptor->listeners, i)
-			{
-				pLuaGameEventListener = (IGameEventListener2*)descriptor->listeners[i]->m_pCallback;
-				descriptor->listeners.Remove(i);
-				break;
-			}
-			if (!pLuaGameEventListener)
-				Warning("holytest: Failed to find pLuaGameEventListener!\n");
-	g_Lua->Pop(1);
+		g_Lua->GetField(-1, "gameevent");
+			g_Lua->GetField(-1, "Listen");
+				g_Lua->PushString("vote_cast");
+				g_Lua->CallFunctionProtected(1, 0, true);
+				CGameEventDescriptor* descriptor = pManager->GetEventDescriptor("vote_cast");
+				FOR_EACH_VEC(descriptor->listeners, i)
+				{
+					pLuaGameEventListener = (IGameEventListener2*)descriptor->listeners[i]->m_pCallback;
+					descriptor->listeners.Remove(i);
+					break;
+				}
+				if (!pLuaGameEventListener)
+					Warning("holytest: Failed to find pLuaGameEventListener!\n");
+	g_Lua->Pop(2);
 }
 
 void CHolyTestModule::LuaShutdown()
