@@ -1,6 +1,6 @@
 #pragma once
 
-#include <GarrysMod/Lua/LuaInterface.h>
+#include <sourcesdk/ILuaInterface.h>
 #include <GarrysMod/Symbol.hpp>
 #include <detouring/hook.hpp>
 #include <GarrysMod/FactoryLoader.hpp>

@@ -1,92 +1,77 @@
 #include "util.h"
+#include "GarrysMod/Lua/LuaObject.h"
 #include <string>
-#include "detours.h"
 #include "GarrysMod/InterfacePointers.hpp"
 #include "sourcesdk/baseclient.h"
 #include "iserver.h"
 #include "module.h"
 #include "icommandline.h"
 #include "player.h"
+#include "detours.h"
 
-GarrysMod::Lua::IUpdatedLuaInterface* g_Lua;
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
+// Try not to use it. We want to move away from it.
+// Additionaly, we will add checks in many functions.
+GarrysMod::Lua::ILuaInterface* g_Lua;
+
 IVEngineServer* engine;
-CGlobalEntityList* Util::entitylist = NULL;
 
-void Util::StartTable() {
-	g_Lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-	g_Lua->CreateTable();
-}
+bool g_pRemoveLuaUserData = true;
+std::unordered_set<LuaUserData*> g_pLuaUserData;
+std::unordered_map<void*, BaseUserData*> g_pGlobalLuaUserData;
 
-void Util::AddFunc(GarrysMod::Lua::CFunc Func, const char* Name) {
-	g_Lua->PushCFunction(Func);
-	g_Lua->SetField(-2, Name);
-}
+std::unordered_set<int> Util::g_pReference;
+ConVar Util::holylib_debug_mainutil("holylib_debug_mainutil", "1");
 
-void Util::AddValue(int value, const char* Name) {
-	g_Lua->PushNumber(value);
-	g_Lua->SetField(-2, Name);
-}
-
-void Util::FinishTable(const char* Name) {
-	g_Lua->SetField(-2, Name);
-	g_Lua->Pop();
-}
-
-void Util::NukeTable(const char* pName)
+/*
+ * NOTE: The Set/Get player & entity functions use a ILuaObject to ensure it mimics gmod's behavior instead of doing the funny holylib stuff.
+ * It might be slower but we want to ensure the game won't possibly break because of our funnies.
+ */
+CBasePlayer* Util::Get_Player(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError) // bError = error if not a valid player
 {
-	g_Lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-		g_Lua->PushNil();
-		g_Lua->SetField(-2, pName);
-	g_Lua->Pop(1);
+	EHANDLE* pEntHandle = LUA->GetUserType<EHANDLE>(iStackPos, GarrysMod::Lua::Type::Entity);
+	if (!pEntHandle)
+	{
+		if (bError)
+			LUA->ThrowError("Tried to use a NULL Entity!");
+
+		return NULL;
+	}
+
+	GarrysMod::Lua::ILuaObject* pObj = LUA->NewTemporaryObject();
+	pObj->SetFromStack(iStackPos);
+
+	return (CBasePlayer*)pObj->GetEntity();
 }
 
-bool Util::PushTable(const char* pName)
+void Util::Push_Entity(GarrysMod::Lua::ILuaInterface* LUA, CBaseEntity* pEnt)
 {
-	g_Lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-		g_Lua->GetField(-1, pName);
-		g_Lua->Remove(-2);
-		if (g_Lua->IsType(-1, GarrysMod::Lua::Type::Table))
-			return true;
+	if (!pEnt)
+	{
+		LUA->GetField(LUA_GLOBALSINDEX, "NULL");
+		return;
+	}
 
-	g_Lua->Pop(1);
-	return false;
+	GarrysMod::Lua::ILuaObject* pObj = LUA->NewTemporaryObject();
+	pObj->SetEntity(pEnt);
+	pObj->Push();
 }
 
-void Util::PopTable()
+CBaseEntity* Util::Get_Entity(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError)
 {
-	g_Lua->Pop(1);
-}
+	EHANDLE* pEntHandle = LUA->GetUserType<EHANDLE>(iStackPos, GarrysMod::Lua::Type::Entity);
+	if (!pEntHandle && bError)
+		LUA->ThrowError("Tried to use a NULL Entity!");
 
-void Util::RemoveField(const char* pName)
-{
-	g_Lua->PushNil();
-	g_Lua->SetField(-2, pName);
-}
-
-
-static Symbols::Get_Player func_GetPlayer;
-static Symbols::Push_Entity func_PushEntity;
-static Symbols::Get_Entity func_GetEntity;
-CBasePlayer* Util::Get_Player(int iStackPos, bool bError) // bError = error if not a valid player
-{
-	if (func_GetPlayer)
-		return func_GetPlayer(iStackPos, bError);
-
-	return NULL;
-}
-
-void Util::Push_Entity(CBaseEntity* pEnt)
-{
-	if (func_PushEntity)
-		func_PushEntity(pEnt);
-}
-
-CBaseEntity* Util::Get_Entity(int iStackPos, bool bError)
-{
-	if (func_GetEntity)
-		return func_GetEntity(iStackPos, bError);
-
-	return NULL;
+	GarrysMod::Lua::ILuaObject* pObj = LUA->NewTemporaryObject();
+	pObj->SetFromStack(iStackPos);
+	CBaseEntity* pEntity = pObj->GetEntity();
+	if (!pEntity && bError)
+		LUA->ThrowError("Tried to use a NULL Entity! (The weird case?)");
+		
+	return pEntity;
 }
 
 IServer* Util::server;
@@ -96,9 +81,7 @@ CBaseClient* Util::GetClientByUserID(int userid)
 	{
 		IClient* pClient = Util::server->GetClient(i);
 		if ( pClient && pClient->GetUserID() == userid)
-		{
 			return (CBaseClient*)pClient;
-		}
 	}
 
 	return NULL;
@@ -107,14 +90,14 @@ CBaseClient* Util::GetClientByUserID(int userid)
 IVEngineServer* Util::engineserver = NULL;
 IServerGameEnts* Util::servergameents = NULL;
 IServerGameClients* Util::servergameclients = NULL;
-CBaseClient* Util::GetClientByPlayer(CBasePlayer* ply)
+CBaseClient* Util::GetClientByPlayer(const CBasePlayer* ply)
 {
-	return Util::GetClientByUserID(Util::engineserver->GetPlayerUserId(Util::GetEdictOfEnt((CBaseEntity*)ply)));
+	return Util::GetClientByUserID(Util::engineserver->GetPlayerUserId(((CBaseEntity*)ply)->edict()));
 }
 
 CBaseClient* Util::GetClientByIndex(int index)
 {
-	if (server->GetClientCount() <= index)
+	if (server->GetClientCount() <= index || index < 0)
 		return NULL;
 
 	return (CBaseClient*)server->GetClient(index);
@@ -138,13 +121,13 @@ CBasePlayer* Util::GetPlayerByClient(CBaseClient* client)
 	return (CBasePlayer*)servergameents->EdictToBaseEntity(engineserver->PEntityOfEntIndex(client->GetPlayerSlot() + 1));
 }
 
-static Symbols::CBaseEntity_CalcAbsolutePosition func_CBaseEntity_CalcAbsolutePosition;
-void CBaseEntity::CalcAbsolutePosition(void)
+CBaseEntity* Util::GetCBaseEntityFromEdict(edict_t* edict)
 {
-	func_CBaseEntity_CalcAbsolutePosition(this);
+	return Util::servergameents->EdictToBaseEntity(edict);
 }
 
 CBaseEntityList* g_pEntityList = NULL;
+IServerGameDLL* Util::servergamedll;
 void Util::AddDetour()
 {
 	if (g_pModuleManager.GetAppFactory())
@@ -166,117 +149,40 @@ void Util::AddDetour()
 		servergameclients = server_loader.GetInterface<IServerGameClients>(INTERFACEVERSION_SERVERGAMECLIENTS);
 	Detour::CheckValue("get interface", "IServerGameClients", servergameclients != NULL);
 
+	if (g_pModuleManager.GetAppFactory())
+		servergamedll = (IServerGameDLL*)g_pModuleManager.GetGameFactory()(INTERFACEVERSION_SERVERGAMEDLL, NULL);
+	else
+		servergamedll = server_loader.GetInterface<IServerGameDLL>(INTERFACEVERSION_SERVERGAMEDLL);
+	Detour::CheckValue("get interface", "IServerGameDLL", servergamedll != NULL);
+
 	server = InterfacePointers::Server();
 	Detour::CheckValue("get class", "IServer", server != NULL);
-
-#ifdef ARCHITECTURE_X86 // We don't use it on 64x, do we. Look into pas_FindInPAS to see how we do it ^^
-	g_pEntityList = Detour::ResolveSymbol<CBaseEntityList>(server_loader, Symbols::g_pEntityListSym);
-	Detour::CheckValue("get class", "g_pEntityList", g_pEntityList != NULL);
-	entitylist = (CGlobalEntityList*)g_pEntityList;
-#endif
-
-	/*
-	 * IMPORTANT TODO
-	 * 
-	 * We now will run in the menu state so if we try to push an entity or so, we may push it in the wrong realm!
-	 * How will we handle multiple realms?
-	 * 
-	 * Idea: Fk menu, if there is a server realm, we'll use it. If not, we wait for one to start.
-	 *		We also could introduce a Lua Flag so that modules can register for Menu/Client realm if wanted.
-	 *		But I won't really support client. At best only menu.
-	 */
-
-#ifndef SYSTEM_WINDOWS
-	func_GetPlayer = (Symbols::Get_Player)Detour::GetFunction(server_loader.GetModule(), Symbols::Get_PlayerSym);
-	func_PushEntity = (Symbols::Push_Entity)Detour::GetFunction(server_loader.GetModule(), Symbols::Push_EntitySym);
-	func_GetEntity = (Symbols::Get_Entity)Detour::GetFunction(server_loader.GetModule(), Symbols::Get_EntitySym);
-	func_CBaseEntity_CalcAbsolutePosition = (Symbols::CBaseEntity_CalcAbsolutePosition)Detour::GetFunction(server_loader.GetModule(), Symbols::CBaseEntity_CalcAbsolutePositionSym);
-	Detour::CheckFunction((void*)func_CBaseEntity_CalcAbsolutePosition, "CBaseEntity::CalcAbsolutePosition");
-	Detour::CheckFunction((void*)func_GetPlayer, "Get_Player");
-	Detour::CheckFunction((void*)func_PushEntity, "Push_Entity");
-	Detour::CheckFunction((void*)func_GetEntity, "Get_Entity");
-#endif
 }
 
+void Util::RemoveDetour()
+{
+}
+
+// If HolyLib was already loaded, we won't load a second time.
+// How could this happen?
+// In cases some other module utilizes HolyLib/compiled it to a .lib and uses the lib file they can load/execute HolyLib themself.
+// & yes, you can compile HolyLib to a .lib file & load it using the 
 static bool g_pShouldLoad = false;
 bool Util::ShouldLoad()
 {
-	if (CommandLine()->FindParm("-holytestexists") && !g_pShouldLoad) // Don't set this manually!
+	if (CommandLine()->FindParm("-holylibexists") && !g_pShouldLoad) // Don't set this manually!
 		return false;
 
 	if (g_pShouldLoad)
 		return true;
 
 	g_pShouldLoad = true;
-	CommandLine()->AppendParm("-holytestexists", "true");
+	CommandLine()->AppendParm("-holylibexists", "true");
 
 	return true;
 }
 
-IRecipientFilter* Get_IRecipientFilter(int iStackPos, bool bError)
-{
-	if (!g_Lua->IsType(iStackPos, GarrysMod::Lua::Type::RecipientFilter))
-	{
-		if (bError)
-			g_Lua->ThrowError("Tried to use something that wasn't a RecipientFilter!");
-
-		return NULL;
-	}
-
-	IRecipientFilter* pFilter = g_Lua->GetUserType<IRecipientFilter>(iStackPos, GarrysMod::Lua::Type::RecipientFilter);
-	if (!pFilter && bError)
-		g_Lua->ThrowError("Tried to use a NULL RecipientFilter!");
-
-	return pFilter;
-}
-
-IConVar* Get_IConVar(int iStackPos, bool bError)
-{
-	if (!g_Lua->IsType(iStackPos, GarrysMod::Lua::Type::ConVar))
-	{
-		if (bError)
-			g_Lua->ThrowError("Tried to use something that wasn't a Convar!");
-
-		return NULL;
-	}
-
-	IConVar* pConVar = g_Lua->GetUserType<IConVar>(iStackPos, GarrysMod::Lua::Type::ConVar);
-	if (!pConVar && bError)
-		g_Lua->ThrowError("Tried to use a NULL ConVar!");
-
-	return pConVar;
-}
-
-Vector* Get_Vector(int iStackPos, bool bError)
-{
-	if (!g_Lua->IsType(iStackPos, GarrysMod::Lua::Type::Vector))
-	{
-		if (bError)
-			g_Lua->ArgError(iStackPos, "expected vector got something else"); // ToDo: Check how ArgError works again
-
-		return NULL;
-	}
-
-	Vector* vec = g_Lua->GetUserType<Vector>(iStackPos, GarrysMod::Lua::Type::Vector);
-	if (!vec && bError)
-		g_Lua->ThrowError("Tried to use a NULL Vector");
-
-	return vec;
-}
-
-QAngle* Get_Angle(int iStackPos, bool bError)
-{
-	if (!g_Lua->IsType(iStackPos, GarrysMod::Lua::Type::Angle))
-	{
-		if (bError)
-			g_Lua->ArgError(iStackPos, "expected angle got something else");
-
-		return NULL;
-	}
-
-	QAngle* ang = g_Lua->GetUserType<QAngle>(iStackPos, GarrysMod::Lua::Type::Angle);
-	if (!ang && bError)
-		g_Lua->ThrowError("Tried to use a NULL Angle");
-
-	return ang;
-}
+GMODGet_LuaClass(IRecipientFilter, GarrysMod::Lua::Type::RecipientFilter, "RecipientFilter")
+GMODGet_LuaClass(Vector, GarrysMod::Lua::Type::Vector, "Vector")
+GMODGet_LuaClass(QAngle, GarrysMod::Lua::Type::Angle, "Angle")
+GMODGet_LuaClass(ConVar, GarrysMod::Lua::Type::ConVar, "ConVar")

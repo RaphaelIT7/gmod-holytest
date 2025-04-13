@@ -4,25 +4,45 @@
 #include "convar.h"
 #include "tier0/icommandline.h"
 
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
+
+// We cannot include util.h as it breaks stuff for some magical reason.
+extern GarrysMod::Lua::ILuaInterface* g_Lua;
+
+static ConVar module_debug("holylib_module_debug", "0");
+
 CModule::~CModule()
 {
 	if ( m_pCVar )
 	{
-		g_pCVar->UnregisterConCommand(m_pCVar);
+		if ( g_pCVar )
+			g_pCVar->UnregisterConCommand(m_pCVar);
+
 		delete m_pCVar; // Could this cause a crash? idk.
+		m_pCVar = NULL;
 	}
 
 	if ( m_pCVarName )
+	{
 		delete[] m_pCVarName;
+		m_pCVarName = NULL;
+	}
 
 	if ( m_pDebugCVar )
 	{
-		g_pCVar->UnregisterConCommand(m_pDebugCVar);
+		if ( g_pCVar )
+			g_pCVar->UnregisterConCommand(m_pDebugCVar);
+
 		delete m_pDebugCVar; // Could this cause a crash? idk either. But it didn't. Yet. Or has it.
+		m_pDebugCVar = NULL;
 	}
 
 	if ( m_pDebugCVarName )
+	{
 		delete[] m_pDebugCVarName;
+		m_pDebugCVarName = NULL;
+	}
 }
 
 void OnModuleConVarChange(IConVar* convar, const char* pOldValue, float flOldValue)
@@ -30,19 +50,23 @@ void OnModuleConVarChange(IConVar* convar, const char* pOldValue, float flOldVal
 	CModule* module = (CModule*)g_pModuleManager.FindModuleByConVar((ConVar*)convar);
 	if (!module)
 	{
-		Warning("holylib: Failed to find CModule for convar %s!\n", convar->GetName());
+		Warning(PROJECT_NAME ": Failed to find CModule for convar %s!\n", convar->GetName());
 		return;
 	}
 
 	module->SetEnabled(((ConVar*)convar)->GetBool(), true);
 }
 
+static bool bIgnoreCallback = false;
 void OnModuleDebugConVarChange(IConVar* convar, const char* pOldValue, float flOldValue)
 {
+	if (bIgnoreCallback)
+		return;
+
 	CModule* module = (CModule*)g_pModuleManager.FindModuleByConVar((ConVar*)convar);
 	if (!module)
 	{
-		Warning("holylib: Failed to find CModule for convar %s!\n", convar->GetName());
+		Warning(PROJECT_NAME ": Failed to find CModule for convar %s!\n", convar->GetName());
 		return;
 	}
 
@@ -94,16 +118,16 @@ void CModule::SetModule(IModule* module)
 	std::string pDebugStrName = "holylib_debug_";
 	pDebugStrName.append(module->Name());
 
-	m_pDebugCVarName = new char[48];
-	V_strncpy(m_pDebugCVarName, pDebugStrName.c_str(), 48);
-	m_pDebugCVar = new ConVar(m_pDebugCVarName, "0", FCVAR_ARCHIVE, "Whether this module will show debug stuff", OnModuleDebugConVarChange);
-
 	int cmdDebug = CommandLine()->ParmValue(((std::string)"-" + pDebugStrName).c_str(), -1);
 	if (cmdDebug > -1)
-	{
 		m_pModule->SetDebug(cmdDebug);
-		m_pDebugCVar->SetValue(cmdDebug);
-	}
+
+	m_strDebugValue = new char[4];
+	V_strncpy(m_strDebugValue, std::to_string(m_pModule->InDebug()).c_str(), 4); // I dislike this :/
+
+	m_pDebugCVarName = new char[48];
+	V_strncpy(m_pDebugCVarName, pDebugStrName.c_str(), 48);
+	m_pDebugCVar = new ConVar(m_pDebugCVarName, m_strDebugValue, FCVAR_ARCHIVE, "Whether this module will show debug stuff", OnModuleDebugConVarChange);
 
 	m_bStartup = false;
 }
@@ -116,7 +140,7 @@ void CModule::SetEnabled(bool bEnabled, bool bForced)
 		{
 			if (!m_bCompatible)
 			{
-				Warning("holylib: module %s is not compatible with this platform!\n", m_pModule->Name());
+				Warning(PROJECT_NAME ": module %s is not compatible with this platform!\n", m_pModule->Name());
 
 				if (!bForced)
 					return;
@@ -133,26 +157,35 @@ void CModule::SetEnabled(bool bEnabled, bool bForced)
 				m_pModule->InitDetour(false);
 
 			if (status & LoadStatus_LuaInit)
-				m_pModule->LuaInit(false);
+			{
+				for (auto& pLua : g_pModuleManager.GetLuaInterfaces())
+					m_pModule->LuaInit(pLua, false);
+			}
 
 			if (status & LoadStatus_LuaServerInit)
-				m_pModule->LuaInit(true);
+			{
+				for (auto& pLua : g_pModuleManager.GetLuaInterfaces())
+					m_pModule->LuaInit(pLua, true);
+			}
 
 			if (status & LoadStatus_ServerActivate)
 				m_pModule->ServerActivate(g_pModuleManager.GetEdictList(), g_pModuleManager.GetEdictCount(), g_pModuleManager.GetClientMax());
 
 			if (!m_bStartup)
-				Msg("holylib: Enabled module %s\n", m_pModule->Name());
+				Msg(PROJECT_NAME ": Enabled module %s\n", m_pModule->Name());
 		} else {
 			int status = g_pModuleManager.GetStatus();
 			if (status & LoadStatus_LuaInit)
-				m_pModule->LuaShutdown();
+			{
+				for (auto& pLua : g_pModuleManager.GetLuaInterfaces())
+					m_pModule->LuaShutdown(pLua);
+			}
 
 			if (status & LoadStatus_Init)
 				Shutdown();
 
 			if (!m_bStartup)
-				Msg("holylib: Disabled module %s\n", m_pModule->Name());
+				Msg(PROJECT_NAME ": Disabled module %s\n", m_pModule->Name());
 		}
 	}
 
@@ -165,35 +198,56 @@ void CModule::Shutdown()
 	m_pModule->Shutdown();
 }
 
-CModuleManager::CModuleManager() // ToDo: Look into how IGameSystem works and use something similar. I don't like to add each one manually
+/*
+	Initially I wanted to do it like the IGameSystem but I think the current approach is better.
+*/
+CModuleManager::CModuleManager()
 {
+	/*
+	BUG: Calling SetValue causes a instant crash!
+	if (CommandLine()->FindParm("-holylib_module_debug") > -1)
+	{
+		module_debug.SetValue("1");
+	}*/
+
 #ifndef LIB_HOLYLIB
 	LoadModules();
 #endif
 }
 
+CModuleManager::~CModuleManager()
+{
+	for (CModule* pModule : m_pModules)
+		delete pModule;
+
+	m_pModules.clear();
+}
+
 void CModuleManager::LoadModules()
 {
+	RegisterModule(pHttpServerModule);
 	RegisterModule(pHolyTestModule);
 }
 
 int g_pIDs = 0;
-void CModuleManager::RegisterModule(IModule* pModule)
+IModuleWrapper* CModuleManager::RegisterModule(IModule* pModule)
 {
 	++g_pIDs;
-	CModule* module = new CModule();
+	CModule* module = new CModule;
+	m_pModules.push_back(module); // Add it first in case any ConVar callbacks get called in SetModule.
 	module->SetModule(pModule);
 	module->SetID(g_pIDs);
-	Msg("holylib: Registered module %-*s (%-*i Enabled: %s Compatible: %s)\n", 
+	Msg(PROJECT_NAME ": Registered module %-*s (%-*i Enabled: %s Compatible: %s MultiLua: %s)\n", 
 		15,
 		module->GetModule()->Name(), 
 		2,
 		g_pIDs,
 		module->IsEnabled() ? "true, " : "false,", 
-		module->IsCompatible() ? "true " : "false"
+		module->IsCompatible() ? "true " : "false",
+		module->GetModule()->SupportsMultipleLuaStates() ? "true " : "false"
 	);
 
-	m_pModules.push_back(module);
+	return module;
 }
 
 IModuleWrapper* CModuleManager::FindModuleByConVar(ConVar* convar)
@@ -213,10 +267,8 @@ IModuleWrapper* CModuleManager::FindModuleByConVar(ConVar* convar)
 IModuleWrapper* CModuleManager::FindModuleByName(const char* name)
 {
 	for (CModule* module : m_pModules)
-	{
 		if (V_stricmp(module->GetModule()->Name(), name) == 0)
 			return module;
-	}
 
 	return NULL;
 }
@@ -227,24 +279,31 @@ void CModuleManager::Setup(CreateInterfaceFn appfn, CreateInterfaceFn gamefn)
 	m_pGameFactory = gamefn;
 }
 
-#define VCALL_ENABLED_MODULES(call) \
+#define BASE_CALL_ENABLED_MODULES(call, additionalChecks) \
 	for (CModule* pModule : m_pModules) { \
 		if ( !pModule->FastIsEnabled() ) { continue; } \
-		pModule->GetModule()-> call; \
+		additionalChecks; \
+		if ( module_debug.GetBool() ) { Msg(PROJECT_NAME ": Calling(V) %s on %s\n", #call, pModule->GetModule()->Name()); } \
+		call; \
+		if ( module_debug.GetBool() ) { Msg(PROJECT_NAME ": Finished calling(V) %s on %s\n", #call, pModule->GetModule()->Name()); } \
 	}
 
+#define VCALL_ENABLED_MODULES(call) \
+	BASE_CALL_ENABLED_MODULES(pModule->GetModule()-> call, )
+
+#define VCALL_LUA_ENABLED_MODULES(call) \
+	BASE_CALL_ENABLED_MODULES(pModule->GetModule()-> call, \
+	if ( g_Lua != pLua && !pModule->GetModule()->SupportsMultipleLuaStates() ) { continue; })
+
 #define CALL_ENABLED_MODULES(call) \
-	for (CModule* pModule : m_pModules) { \
-		if ( !pModule->FastIsEnabled() ) { continue; } \
-		pModule-> call; \
-	}
+	BASE_CALL_ENABLED_MODULES(pModule-> call, )
 
 
 void CModuleManager::Init()
 {
 	if (!(m_pStatus & LoadStatus_PreDetourInit))
 	{
-		DevMsg("holylib: ghostinj didn't call InitDetour! Calling it now\n");
+		DevMsg(PROJECT_NAME ": ghostinj didn't call InitDetour! Calling it now\n");
 		InitDetour(true);
 	}
 
@@ -252,19 +311,32 @@ void CModuleManager::Init()
 	VCALL_ENABLED_MODULES(Init(& GetAppFactory(), &GetGameFactory()));
 }
 
-void CModuleManager::LuaInit(bool bServerInit)
+void CModuleManager::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerInit)
 {
 	if (bServerInit)
 		m_pStatus |= LoadStatus_LuaServerInit;
 	else
 		m_pStatus |= LoadStatus_LuaInit;
 
-	VCALL_ENABLED_MODULES(LuaInit(bServerInit));
+	/*if (!Lua::GetLuaData(pLua))
+	{
+		Warning("holylib: tried to Initialize a LuaInterface when it had no allocated StateData!\n");
+		return;
+	}*/
+
+	AddLuaInterface(pLua);
+	VCALL_LUA_ENABLED_MODULES(LuaInit(pLua, bServerInit));
 }
 
-void CModuleManager::LuaShutdown()
+void CModuleManager::LuaThink(GarrysMod::Lua::ILuaInterface* pLua)
 {
-	VCALL_ENABLED_MODULES(LuaShutdown());
+	VCALL_LUA_ENABLED_MODULES(LuaThink(pLua));
+}
+
+void CModuleManager::LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua)
+{
+	VCALL_LUA_ENABLED_MODULES(LuaShutdown(pLua));
+	RemoveLuaInterface(pLua);
 }
 
 void CModuleManager::InitDetour(bool bPreServer)
@@ -298,4 +370,41 @@ void CModuleManager::ServerActivate(edict_t* pEdictList, int edictCount, int cli
 	VCALL_ENABLED_MODULES(ServerActivate(pEdictList, edictCount, clientMax));
 }
 
+void CModuleManager::OnEdictAllocated(edict_t* pEdict)
+{
+	VCALL_ENABLED_MODULES(OnEdictAllocated(pEdict));
+}
+
+void CModuleManager::OnEdictFreed(const edict_t* pEdict)
+{
+	VCALL_ENABLED_MODULES(OnEdictFreed(pEdict));
+}
+
+void CModuleManager::OnEntityCreated(CBaseEntity* pEntity)
+{
+	VCALL_ENABLED_MODULES(OnEntityCreated(pEntity));
+}
+
+void CModuleManager::OnEntitySpawned(CBaseEntity* pEntity)
+{
+	VCALL_ENABLED_MODULES(OnEntitySpawned(pEntity));
+}
+
+void CModuleManager::OnEntityDeleted(CBaseEntity* pEntity)
+{
+	VCALL_ENABLED_MODULES(OnEntityDeleted(pEntity));
+}
+
+void CModuleManager::LevelShutdown()
+{
+	VCALL_ENABLED_MODULES(LevelShutdown());
+}
+
 CModuleManager g_pModuleManager;
+
+static void NukeModules(const CCommand &args)
+{
+	for (IModuleWrapper* module : g_pModuleManager.GetModules())
+		module->SetEnabled(false, true);
+}
+static ConCommand nukemodules("holylib_nukemodules", NukeModules, "Debug command. Disables all modules.", 0);

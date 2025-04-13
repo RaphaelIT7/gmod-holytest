@@ -1,4 +1,3 @@
-#include <GarrysMod/Lua/Interface.h>
 #include "plugin.h"
 #include "lua.h"
 #include <tier1.h>
@@ -202,6 +201,7 @@ void CServerPlugin::ServerActivate(edict_t *pEdictList, int edictCount, int clie
 void CServerPlugin::GameFrame(bool simulating)
 {
 	g_pModuleManager.Think(simulating);
+	g_pModuleManager.LuaThink(g_Lua);
 }
 
 //---------------------------------------------------------------------------------

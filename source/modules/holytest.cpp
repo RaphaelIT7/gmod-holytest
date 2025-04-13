@@ -1,15 +1,15 @@
+#include "lua.h"
 #include "module.h"
 #include <GarrysMod/Lua/Interface.h>
 #include "sourcesdk/GameEventManager.h"
-#include "lua.h"
 #include "detours.h"
 
 class CHolyTestModule : public IModule
 {
 public:
 	virtual void Init(CreateInterfaceFn* appfn, CreateInterfaceFn* gamefn) OVERRIDE;
-	virtual void LuaInit(bool bServerInit) OVERRIDE;
-	virtual void LuaShutdown() OVERRIDE;
+	virtual void LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerInit) OVERRIDE;
+	virtual void LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua) OVERRIDE;
 	virtual const char* Name() { return "holytest"; };
 	virtual int Compatibility() { return LINUX32; };
 };
@@ -25,7 +25,7 @@ LUA_FUNCTION_STATIC(ServerExecute)
 
 LUA_FUNCTION_STATIC(UnregisterConVar)
 {
-	ConVar* pConVar = (ConVar*)Get_IConVar(1, true);
+	ConVar* pConVar = (ConVar*)Get_ConVar(LUA, 1, true);
 
 	g_pCVar->UnregisterConCommand(pConVar);
 	LUA->SetUserType(1, NULL); // Set the reference to NULL
@@ -102,23 +102,23 @@ void CHolyTestModule::Init(CreateInterfaceFn* appfn, CreateInterfaceFn* gamefn)
 	Detour::CheckValue("get interface", "CGameEventManager", pManager != NULL);
 }
 
-void CHolyTestModule::LuaInit(bool bServerInit)
+void CHolyTestModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerInit)
 {
 	if (bServerInit)
 		return;
 
-	Util::StartTable();
-		Util::AddFunc(ServerExecute, "ServerExecute");
-		Util::AddFunc(UnregisterConVar, "UnregisterConVar");
-		Util::AddFunc(GetEventListeners, "GetEventListeners");
-		Util::AddFunc(RemoveEventListener, "RemoveEventListener");
-	Util::FinishTable("holytest");
+	Util::StartTable(pLua);
+		Util::AddFunc(pLua, ServerExecute, "ServerExecute");
+		Util::AddFunc(pLua, UnregisterConVar, "UnregisterConVar");
+		Util::AddFunc(pLua, GetEventListeners, "GetEventListeners");
+		Util::AddFunc(pLua, RemoveEventListener, "RemoveEventListener");
+	Util::FinishTable(pLua, "holytest");
 
-	g_Lua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
-		g_Lua->GetField(-1, "gameevent");
-			g_Lua->GetField(-1, "Listen");
-				g_Lua->PushString("vote_cast");
-				g_Lua->CallFunctionProtected(1, 0, true);
+	pLua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+		pLua->GetField(-1, "gameevent");
+			pLua->GetField(-1, "Listen");
+				pLua->PushString("vote_cast");
+				pLua->CallFunctionProtected(1, 0, true);
 				CGameEventDescriptor* descriptor = pManager->GetEventDescriptor("vote_cast");
 				FOR_EACH_VEC(descriptor->listeners, i)
 				{
@@ -128,10 +128,10 @@ void CHolyTestModule::LuaInit(bool bServerInit)
 				}
 				if (!pLuaGameEventListener)
 					Warning("holytest: Failed to find pLuaGameEventListener!\n");
-	g_Lua->Pop(2);
+	pLua->Pop(2);
 }
 
-void CHolyTestModule::LuaShutdown()
+void CHolyTestModule::LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua)
 {
-	Util::NukeTable("holytest");
+	Util::NukeTable(pLua, "holytest");
 }

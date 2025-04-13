@@ -25,3 +25,7 @@ If name is not a string, it will return a table containing all events and their 
 
 #### bool holytest.RemoveEventListener(string name)
 string name - The event to remove the Lua gameevent listener from.  
+
+### Entire HttpServer module
+The entire HttpServer module from Http was implemented.  
+All functions can be seen here when searching for `Http`: https://holylib.raphaelit7.com/

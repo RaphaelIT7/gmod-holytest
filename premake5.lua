@@ -48,6 +48,7 @@ CreateWorkspace({name = "holytest", abi_compatible = false})
 		defines("GITHUB_RUN_BRANCH=\"" .. branch .. "\"")
 		defines("GITHUB_RUN_DATA=" .. additional)
 		defines("SWDS=1")
+		defines("PROJECT_NAME=\"holytest\"")
 
 		files({
 			[[source/modules/*.h]],
