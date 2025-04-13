@@ -21,7 +21,7 @@ jobs:
       BUILD_64x: "true"
       REALM: "sv"
       LINUX_FILEEXTENTION: "so"
-      BUILD_WINDOWS: "true"
+      BUILD_WINDOWS: "false" # Windows isn't needed right now
       ARTIFACT_EXPIRE: "7"
       SOURCESDK_MINIMAL: "RaphaelIT7/sourcesdk-minimal"
       SOURCESDK_MINIMAL_BRANCH: "patch-6"
@@ -124,3 +124,78 @@ jobs:
           path: gluatest.tar.gz
           compression-level: 9
           retention-days: 1
+
+  test_build_32x:
+    name: "Test 32x branches"
+    needs: setup_32x_artifacts
+    uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
+    strategy:
+      matrix:
+        branch:
+          - live
+          - dev
+          - prerelease
+    with:
+      extra-startup-args: "-usegh"
+      download-artifact: "gluatest_32x"
+
+  test_build_64x:
+    name: "Test x86-64 branch"
+    needs: setup_64x_artifacts
+    uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
+    with:
+      branch: x86-64
+      extra-startup-args: "-usegh"
+      download-artifact: "gluatest_64x"
+
+  release_update: # If all tests passed, we do a release
+    name: "Release Update"
+    needs: [test_build_32x, test_build_64x]
+    runs-on: ubuntu-latest
+    container: debian:bullseye
+    steps:
+      - uses: actions/download-artifact@v4
+        name: Download Linux 32x
+        with:
+          name: "gluatest_32x"
+          path: "linux32/"
+          run-id: ${{inputs.ARTIFACT_ID}}
+
+      - uses: actions/download-artifact@v4
+        name: Download Linux 64x
+        with:
+          name: "gluatest_64x"
+          path: "linux64/"
+          run-id: ${{inputs.ARTIFACT_ID}}
+
+      - name: Create Release
+        id: create_release
+        uses: shogo82148/actions-create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+          make_latest: true
+
+      - name: Upload Linux 32x
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux32/gluatest.tar.gz
+          asset_name: linux32
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux 64x
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux64/gluatest.tar.gz
+          asset_name: linux64
+          asset_content_type: application/octet-stream
