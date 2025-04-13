@@ -128,7 +128,7 @@ jobs:
   test_build_32x:
     name: "Test 32x branches"
     needs: setup_32x_artifacts
-    uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
+    uses: RaphaelIT7/GLuaTest/.github/workflows/run_tests.yml@patch-9
     strategy:
       matrix:
         branch:
@@ -136,23 +136,33 @@ jobs:
           - dev
           - prerelease
     with:
+      gluatest-ref: "patch-9"
+      gluatest-repo: "https://github.com/RaphaelIT7/GLuaTest"
+      no-checkout: "true"
       extra-startup-args: "-usegh"
       download-artifact: "gluatest_32x"
+      dockerbuild: "true"
 
   test_build_64x:
     name: "Test x86-64 branch"
     needs: setup_64x_artifacts
-    uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
+    uses: RaphaelIT7/GLuaTest/.github/workflows/run_tests.yml@patch-9
     with:
       branch: x86-64
+      gluatest-ref: "patch-9"
+      gluatest-repo: "https://github.com/RaphaelIT7/GLuaTest"
+      no-checkout: "true"
       extra-startup-args: "-usegh"
       download-artifact: "gluatest_64x"
+      dockerbuild: "true"
 
   release_update: # If all tests passed, we do a release
     name: "Release Update"
     needs: [test_build_32x, test_build_64x]
     runs-on: ubuntu-latest
     container: debian:bullseye
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         name: Download Linux 32x
@@ -175,9 +185,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.run_number }}
-          release_name: Release ${{ github.run_number }}
+          release_name: Build ${{ github.run_number }}
           draft: false
-          prerelease: false
+          prerelease: true
           make_latest: true
 
       - name: Upload Linux 32x
@@ -187,7 +197,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: linux32/gluatest.tar.gz
-          asset_name: linux32
+          asset_name: linux32.tar.gz
           asset_content_type: application/octet-stream
 
       - name: Upload Linux 64x
@@ -197,5 +207,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: linux64/gluatest.tar.gz
-          asset_name: linux64
+          asset_name: linux64.tar.gz
           asset_content_type: application/octet-stream
