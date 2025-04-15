@@ -8,6 +8,8 @@ on:
       - 'gluatests/**'
       - 'libs/**'
       - 'premake5.lua'
+      - 'holytest.vdf'
+      - 'holytest_64.vdf'
       - '!source/public/README.md'
   pull_request:
   workflow_dispatch:
