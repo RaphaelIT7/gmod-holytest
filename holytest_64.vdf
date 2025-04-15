@@ -1,4 +1,4 @@
 Plugin
 {
-	file		"lua/bin/gmsv_holylib_linux64.so"
+	file		"lua/bin/gmsv_holytest_linux64.so"
 }
