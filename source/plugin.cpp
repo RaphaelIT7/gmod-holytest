@@ -99,7 +99,7 @@ bool CServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn g
 	g_pModuleManager.Init();
 	g_pModuleManager.InitDetour(false);
 
-	Msg("--- HolyLib Plugin finished loading ---\n");
+	Msg("--- HolyTest Plugin finished loading ---\n");
 
 	return true;
 }
