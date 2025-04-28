@@ -149,7 +149,7 @@ jobs:
   test_build_32x:
     name: "Test 32x branches"
     needs: setup_32x_artifacts
-    uses: RaphaelIT7/GLuaTest/.github/workflows/run_tests.yml@patch-9
+    uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
     strategy:
       matrix:
         branch:
@@ -157,25 +157,19 @@ jobs:
           - dev
           - prerelease
     with:
-      gluatest-ref: "patch-9"
-      gluatest-repo: "https://github.com/RaphaelIT7/GLuaTest"
       no-checkout: "true"
       extra-startup-args: "-usegh"
       download-artifact: "gluatest_32x"
-      dockerbuild: "true"
 
   test_build_64x:
     name: "Test x86-64 branch"
     needs: setup_64x_artifacts
-    uses: RaphaelIT7/GLuaTest/.github/workflows/run_tests.yml@patch-9
+    uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
     with:
       branch: x86-64
-      gluatest-ref: "patch-9"
-      gluatest-repo: "https://github.com/RaphaelIT7/GLuaTest"
       no-checkout: "true"
       extra-startup-args: "-usegh"
       download-artifact: "gluatest_64x"
-      dockerbuild: "true"
 
   release_update: # If all tests passed, we do a release
     name: "Release Update"
