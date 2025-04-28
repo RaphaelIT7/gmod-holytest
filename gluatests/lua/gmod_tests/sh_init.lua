@@ -20,8 +20,12 @@ FCVAR_ACCESSIBLE_FROM_THREADS = bit.lshift( 1, 25 )
 FCVAR_AVAILABLE1 = bit.lshift( 1, 26 )
 FCVAR_AVAILABLE2 = bit.lshift( 1, 27 )
 
+--[[
+    We cannot check the convars directly because we never register them.
+    they could cause bugs/crahses and we want to reduce all risks.
+]]
 function HolyTest_IsModuleEnabled(name)
-	return GetConVar("holytest_enable_" .. name):GetBool()
+    return _G[name] ~= nil
 end
 
 if SERVER then

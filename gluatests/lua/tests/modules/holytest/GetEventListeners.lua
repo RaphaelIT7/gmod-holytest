@@ -32,7 +32,7 @@ return {
             func = function()
                 expect( holytest.GetEventListeners() ).to.beA( "table" )
 
-                gameevent.Listen( "hltv_status" )
+                gameevent.Listen( "hltv_title" )
 
                 expect( holytest.GetEventListeners()[ "hltv_title" ] ).to.equal( 1 )
             end

@@ -88,7 +88,7 @@ LUA_FUNCTION_STATIC(RemoveEventListener)
 			}
 		}
 	} else {
-		Warning("holylib: Failed to find LuaGameEventListener in GameSystems?\n");
+		Warning("holytest: Failed to find LuaGameEventListener in GameSystems?\n");
 	}
 
 	LUA->PushBool(bSuccess);

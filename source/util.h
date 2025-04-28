@@ -278,7 +278,7 @@ struct BaseUserData {
 
 		--m_iReferenceCount;
 #if HOLYLIB_UTIL_DEBUG_BASEUSERDATA
-		Msg("holylib - util: Userdata %p(%p) got released %i\n", this, m_pData, m_iReferenceCount);
+		Msg("holytest - util: Userdata %p(%p) got released %i\n", this, m_pData, m_iReferenceCount);
 #endif
 		m_pOwningData.erase(pLuaUserData);
 
@@ -320,7 +320,7 @@ private:
 		++m_iReferenceCount;
 		m_pMutex.Unlock();
 #if HOLYLIB_UTIL_DEBUG_BASEUSERDATA
-		Msg("holylib - util: Userdata %p(%p) got aquired %i\n", this, m_pData, m_iReferenceCount);
+		Msg("holytest - util: Userdata %p(%p) got aquired %i\n", this, m_pData, m_iReferenceCount);
 #endif
 	}
 
@@ -413,7 +413,7 @@ struct LuaUserData {
 	inline void CreateReference()
 	{
 		if (iReference != -1)
-			Warning("holylib: something went wrong when pushing userdata! (Reference leak!)\n");
+			Warning("holytest: something went wrong when pushing userdata! (Reference leak!)\n");
 
 		pLua->Push(-1); // When CreateReference is called we expect our object to be already be on the stack at -1!
 		iReference = Util::ReferenceCreate(pLua, "LuaUserData::CreateReference");

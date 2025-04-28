@@ -10,7 +10,7 @@
 // We cannot include util.h as it breaks stuff for some magical reason.
 extern GarrysMod::Lua::ILuaInterface* g_Lua;
 
-static ConVar module_debug("holylib_module_debug", "0");
+static ConVar module_debug("holytest_module_debug", "0");
 
 CModule::~CModule()
 {
@@ -100,22 +100,22 @@ void CModule::SetModule(IModule* module)
 #endif
 #endif
 
-	std::string pStrName = "holylib_enable_";
+	std::string pStrName = "holytest_enable_";
 	pStrName.append(module->Name());
 	std::string cmdStr = "-";
 	cmdStr.append(pStrName);
-	int cmd = CommandLine()->ParmValue(cmdStr.c_str(), -1); // checks for "-holylib_enable_[module name] [1 / 0]"
+	int cmd = CommandLine()->ParmValue(cmdStr.c_str(), -1); // checks for "-holytest_enable_[module name] [1 / 0]"
 	if (cmd > -1)
 		SetEnabled(cmd == 1, true);
 	else
-		if (!CommandLine()->FindParm("-holylib_startdisabled"))
+		if (!CommandLine()->FindParm("-holytest_startdisabled"))
 			m_bEnabled = m_pModule->IsEnabledByDefault() ? m_bCompatible : false;
 
 	m_pCVarName = new char[48];
 	V_strncpy(m_pCVarName, pStrName.c_str(), 48);
 	m_pCVar = new ConVar(m_pCVarName, m_bEnabled ? "1" : "0", FCVAR_ARCHIVE, "Whether this module should be active or not", OnModuleConVarChange);
 
-	std::string pDebugStrName = "holylib_debug_";
+	std::string pDebugStrName = "holytest_debug_";
 	pDebugStrName.append(module->Name());
 
 	int cmdDebug = CommandLine()->ParmValue(((std::string)"-" + pDebugStrName).c_str(), -1);
@@ -205,7 +205,7 @@ CModuleManager::CModuleManager()
 {
 	/*
 	BUG: Calling SetValue causes a instant crash!
-	if (CommandLine()->FindParm("-holylib_module_debug") > -1)
+	if (CommandLine()->FindParm("-holytest_module_debug") > -1)
 	{
 		module_debug.SetValue("1");
 	}*/
@@ -320,7 +320,7 @@ void CModuleManager::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIn
 
 	/*if (!Lua::GetLuaData(pLua))
 	{
-		Warning("holylib: tried to Initialize a LuaInterface when it had no allocated StateData!\n");
+		Warning("holytest: tried to Initialize a LuaInterface when it had no allocated StateData!\n");
 		return;
 	}*/
 
@@ -407,4 +407,4 @@ static void NukeModules(const CCommand &args)
 	for (IModuleWrapper* module : g_pModuleManager.GetModules())
 		module->SetEnabled(false, true);
 }
-static ConCommand nukemodules("holylib_nukemodules", NukeModules, "Debug command. Disables all modules.", 0);
+static ConCommand nukemodules("holytest_nukemodules", NukeModules, "Debug command. Disables all modules.", 0);

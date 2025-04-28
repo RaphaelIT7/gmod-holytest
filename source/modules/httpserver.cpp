@@ -560,7 +560,7 @@ httplib::Server::Handler HttpServer::CreateHandler(const char* path, int func, b
 		if (ipWhitelist && userID == -1)
 		{
 			if (g_pHttpServerModule.InDebug())
-				Msg("holylib - httpserver: Request was denied as the ipWhitelist is enabled and the client couldn't be found.\n");
+				Msg("holytest - httpserver: Request was denied as the ipWhitelist is enabled and the client couldn't be found.\n");
 
 			return;
 		}
@@ -585,7 +585,7 @@ httplib::Server::Handler HttpServer::CreateHandler(const char* path, int func, b
 		m_pPreparedResponsesMutex.Unlock();
 
 		if (g_pHttpServerModule.InDebug())
-			Msg("holylib - httpserver: Waiting for Main thread to pick up request\n");
+			Msg("holytest - httpserver: Waiting for Main thread to pick up request\n");
 
 		HttpRequest* request = new HttpRequest;
 		request->m_strPath = path;
@@ -604,7 +604,7 @@ httplib::Server::Handler HttpServer::CreateHandler(const char* path, int func, b
 		request->m_bDelete = true;
 
 		if (g_pHttpServerModule.InDebug())
-			Msg("holylib - httpserver: Finished request\n");
+			Msg("holytest - httpserver: Finished request\n");
 	};
 }
 
@@ -1063,7 +1063,7 @@ void CHTTPServerModule::LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua)
 
 void CHTTPServerModule::Think(bool simulating)
 {
-	//VPROF_BUDGET("HolyLib - CHTTPServerModule::Think", VPROF_BUDGETGROUP_HOLYLIB);
+	//VPROF_BUDGET("HolyTest - CHTTPServerModule::Think", VPROF_BUDGETGROUP_HOLYLIB);
 
 	for (auto& httpserver : g_pHttpServers)
 		httpserver->Think();

@@ -57,25 +57,6 @@ void Lua::Init(GarrysMod::Lua::ILuaInterface* LUA)
 	g_Lua = LUA;
 	Lua::CreateLuaData(g_Lua, true);
 	g_pModuleManager.LuaInit(g_Lua, false);
-
-	std::vector<LuaFindResult> results;
-	GetShared()->FindScripts("lua/autorun/_holylib/*.lua", "GAME", results);
-	for (LuaFindResult& result : results)
-	{
-		std::string fileName = "lua/autorun/_holylib/";
-		fileName.append(result.GetFileName());
-		FileHandle_t fh = g_pFullFileSystem->Open(fileName.c_str(), "rb", "GAME");
-		if (fh)
-		{
-			int length = g_pFullFileSystem->Size(fh);
-			char* buffer = new char[length + 1];
-			g_pFullFileSystem->Read(buffer, length, fh);
-			buffer[length] = 0;
-			g_Lua->RunStringEx(fileName.c_str(), "", buffer, true, true, true, true);
-			delete[] buffer;
-			g_pFullFileSystem->Close(fh);
-		}
-	}
 }
 
 void Lua::ServerInit()
@@ -218,13 +199,13 @@ void Lua::CreateLuaData(GarrysMod::Lua::ILuaInterface* LUA, bool bNullOut)
 {
 	if (Lua::GetLuaData(LUA))
 	{
-		Msg("holylib - Skipping thread data creation since we already found data %p\n", Lua::GetLuaData(LUA));
+		Msg("holytest - Skipping thread data creation since we already found data %p\n", Lua::GetLuaData(LUA));
 		return;
 	}
 
 	Lua::StateData* data = new Lua::StateData;
 	g_pLuaStateLinks[LUA] = data;
-	Msg("holylib - Created thread data %p\n", data);
+	Msg("holytest - Created thread data %p\n", data);
 }
 
 void Lua::RemoveLuaData(GarrysMod::Lua::ILuaInterface* LUA)
@@ -235,7 +216,7 @@ void Lua::RemoveLuaData(GarrysMod::Lua::ILuaInterface* LUA)
 
 	g_pLuaStateLinks.erase(LUA);
 	delete data;
-	Msg("holylib - Removed thread data %p\n", data);
+	Msg("holytest - Removed thread data %p\n", data);
 }
 
 const std::unordered_set<Lua::StateData*>& Lua::GetAllLuaData()

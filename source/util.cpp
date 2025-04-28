@@ -23,7 +23,7 @@ std::unordered_set<LuaUserData*> g_pLuaUserData;
 std::unordered_map<void*, BaseUserData*> g_pGlobalLuaUserData;
 
 std::unordered_set<int> Util::g_pReference;
-ConVar Util::holylib_debug_mainutil("holylib_debug_mainutil", "1");
+ConVar Util::holylib_debug_mainutil("holytest_debug_mainutil", "1");
 
 /*
  * NOTE: The Set/Get player & entity functions use a ILuaObject to ensure it mimics gmod's behavior instead of doing the funny holylib stuff.
@@ -170,14 +170,14 @@ void Util::RemoveDetour()
 static bool g_pShouldLoad = false;
 bool Util::ShouldLoad()
 {
-	if (CommandLine()->FindParm("-holylibexists") && !g_pShouldLoad) // Don't set this manually!
+	if (CommandLine()->FindParm("-holytestexists") && !g_pShouldLoad) // Don't set this manually!
 		return false;
 
 	if (g_pShouldLoad)
 		return true;
 
 	g_pShouldLoad = true;
-	CommandLine()->AppendParm("-holylibexists", "true");
+	CommandLine()->AppendParm("-holytestexists", "true");
 
 	return true;
 }

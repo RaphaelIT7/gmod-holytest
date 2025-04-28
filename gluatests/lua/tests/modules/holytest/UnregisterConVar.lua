@@ -21,11 +21,12 @@ return {
             func = function()
                 local convar = CreateConVar( "holytest_convartest", "1" )
 
-                expect( convar ).to.beValid()
+                expect( convar ).toNot.beNil()
+                expect( convar:__tostring() ).toNot.equal( "ConVar [NULL]" )
 
                 holytest.UnregisterConVar( convar )
 
-                expect( convar ).to.beInvalid()
+                expect( convar:__tostring() ).to.equal( "ConVar [NULL]" )
             end
         },
     }
