@@ -162,7 +162,6 @@ jobs:
       no-checkout: "true"
       extra-startup-args: "-usegh"
       download-artifact: "gluatest_32x"
-      dockerbuild: "true"
 
   test_build_64x:
     name: "Test x86-64 branch"
@@ -175,7 +174,6 @@ jobs:
       no-checkout: "true"
       extra-startup-args: "-usegh"
       download-artifact: "gluatest_64x"
-      dockerbuild: "true"
 
   release_update: # If all tests passed, we do a release
     name: "Release Update"
