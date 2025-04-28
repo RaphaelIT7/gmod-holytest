@@ -75,7 +75,9 @@ jobs:
 
           mkdir -p garrysmod/addons
           mv holytest.vdf garrysmod/addons
+          tar -czf holytest.tar.gz ghostinj.dll garrysmod/
 
+          mv gluatests garrysmod/addons
           tar -czf gluatest.tar.gz ghostinj.dll garrysmod/
 
       - uses: actions/upload-artifact@v4
@@ -83,6 +85,14 @@ jobs:
         with:
           name: gluatest_32x
           path: gluatest.tar.gz
+          compression-level: 9
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        name: "Upload release tar"
+        with:
+          name: holytest_32x
+          path: holytest.tar.gz
           compression-level: 9
           retention-days: 1
 
@@ -115,8 +125,9 @@ jobs:
 
           mkdir -p garrysmod/addons
           mv holytest_64.vdf garrysmod/addons
-          mv gluatests garrysmod/addons
+          tar -czf holytest.tar.gz ghostinj.dll garrysmod/
 
+          mv gluatests garrysmod/addons
           tar -czf gluatest.tar.gz ghostinj.dll garrysmod/
 
       - uses: actions/upload-artifact@v4
@@ -124,6 +135,14 @@ jobs:
         with:
           name: gluatest_64x
           path: gluatest.tar.gz
+          compression-level: 9
+          retention-days: 1
+
+      - uses: actions/upload-artifact@v4
+        name: "Upload release tar"
+        with:
+          name: holytest_64x
+          path: holytest.tar.gz
           compression-level: 9
           retention-days: 1
 
@@ -169,14 +188,14 @@ jobs:
       - uses: actions/download-artifact@v4
         name: Download Linux 32x
         with:
-          name: "gluatest_32x"
+          name: "holytest_32x"
           path: "linux32/"
           run-id: ${{inputs.ARTIFACT_ID}}
 
       - uses: actions/download-artifact@v4
         name: Download Linux 64x
         with:
-          name: "gluatest_64x"
+          name: "holytest_64x"
           path: "linux64/"
           run-id: ${{inputs.ARTIFACT_ID}}
 
