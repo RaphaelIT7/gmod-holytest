@@ -211,7 +211,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: linux32/gluatest.tar.gz
+          asset_path: linux32/holytest.tar.gz
           asset_name: linux32.tar.gz
           asset_content_type: application/octet-stream
 
@@ -221,6 +221,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: linux64/gluatest.tar.gz
+          asset_path: linux64/holytest.tar.gz
           asset_name: linux64.tar.gz
           asset_content_type: application/octet-stream
