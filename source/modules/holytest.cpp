@@ -3,6 +3,7 @@
 #include <GarrysMod/Lua/Interface.h>
 #include "sourcesdk/GameEventManager.h"
 #include "detours.h"
+#include "player.h"
 
 class CHolyTestModule : public IModule
 {
@@ -96,6 +97,17 @@ LUA_FUNCTION_STATIC(RemoveEventListener)
 	return 1;
 }
 
+LUA_FUNCTION_STATIC(ReceiveClientMessage)
+{
+	int userID = LUA->CheckNumber(1);
+	CBaseEntity* pEnt = Util::Get_Entity(LUA, 2, true);
+	bf_read* msg = Get_bf_read(LUA, 3, true);
+	int bits = LUA->CheckNumber(4);
+
+	Util::servergameclients->GMOD_ReceiveClientMessage(userID, pEnt->edict(), msg, bits);
+	return 0;
+}
+
 void CHolyTestModule::Init(CreateInterfaceFn* appfn, CreateInterfaceFn* gamefn)
 {
 	pManager = (CGameEventManager*)appfn[0](INTERFACEVERSION_GAMEEVENTSMANAGER2, NULL);
@@ -112,6 +124,7 @@ void CHolyTestModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerI
 		Util::AddFunc(pLua, UnregisterConVar, "UnregisterConVar");
 		Util::AddFunc(pLua, GetEventListeners, "GetEventListeners");
 		Util::AddFunc(pLua, RemoveEventListener, "RemoveEventListener");
+		Util::AddFunc(pLua, ReceiveClientMessage, "ReceiveClientMessage");
 	Util::FinishTable(pLua, "holytest");
 
 	pLua->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);

@@ -785,11 +785,17 @@ LUA_FUNCTION_STATIC(className ## _GetTable) \
 
 class Vector;
 class QAngle;
-Vector* Get_Vector(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError = true);
-QAngle* Get_QAngle(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError = true);
+extern Vector* Get_Vector(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError = true);
+extern QAngle* Get_QAngle(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError = true);
 
 class IRecipientFilter;
 extern IRecipientFilter* Get_IRecipientFilter(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError);
 
 class ConVar;
 extern ConVar* Get_ConVar(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError);
+
+extern void Push_QAngle(GarrysMod::Lua::ILuaInterface* LUA, QAngle* var);
+extern void Push_Vector(GarrysMod::Lua::ILuaInterface* LUA, Vector* var);
+
+class bf_read;
+extern bf_read* Get_bf_read(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError);

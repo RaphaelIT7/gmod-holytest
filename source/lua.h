@@ -45,6 +45,8 @@ namespace Lua
 		HttpResponse,
 		HttpRequest,
 		HttpServer,
+		bf_read,
+		bf_write,
 
 		TOTAL_TYPES,
 	};

@@ -71,19 +71,6 @@ public:
 	// NOTE: Only Entities that are networked use edicts.
 	virtual void OnEdictFreed(const edict_t* pEdict) { (void)pEdict; };
 
-	// Called when a CBaseEntity is created
-	// NOTE: If we fail to load the g_pEntityList, this won't be called!
-	// WARNING: This can be called multiple times for the same entity!
-	virtual void OnEntityCreated(CBaseEntity* pEntity) { (void)pEntity; };
-
-	// Called when a CBaseEntity is created
-	// NOTE: If we fail to load the g_pEntityList, this won't be called!
-	virtual void OnEntitySpawned(CBaseEntity* pEntity) { (void)pEntity; };
-
-	// Called when a CBaseEntity is created
-	// NOTE: If we fail to load the g_pEntityList, this won't be called!
-	virtual void OnEntityDeleted(CBaseEntity* pEntity) { (void)pEntity; };
-
 	// Called on level shutdown
 	virtual void LevelShutdown() {};
 
@@ -181,8 +168,5 @@ public:
 	virtual void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax) = 0;
 	virtual void OnEdictAllocated(edict_t* pEdict) = 0;
 	virtual void OnEdictFreed(const edict_t* pEdict) = 0;
-	virtual void OnEntityCreated(CBaseEntity* pEntity) = 0;
-	virtual void OnEntitySpawned(CBaseEntity* pEntity) = 0;
-	virtual void OnEntityDeleted(CBaseEntity* pEntity) = 0;
 	virtual void LevelShutdown() = 0;
 };

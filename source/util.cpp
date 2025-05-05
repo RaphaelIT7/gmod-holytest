@@ -186,3 +186,6 @@ GMODGet_LuaClass(IRecipientFilter, GarrysMod::Lua::Type::RecipientFilter, "Recip
 GMODGet_LuaClass(Vector, GarrysMod::Lua::Type::Vector, "Vector")
 GMODGet_LuaClass(QAngle, GarrysMod::Lua::Type::Angle, "Angle")
 GMODGet_LuaClass(ConVar, GarrysMod::Lua::Type::ConVar, "ConVar")
+
+GMODPush_LuaClass(QAngle, GarrysMod::Lua::Type::Angle)
+GMODPush_LuaClass(Vector, GarrysMod::Lua::Type::Vector)

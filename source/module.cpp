@@ -227,6 +227,7 @@ void CModuleManager::LoadModules()
 {
 	RegisterModule(pHttpServerModule);
 	RegisterModule(pHolyTestModule);
+	RegisterModule(pBitBufModule);
 }
 
 int g_pIDs = 0;
@@ -378,21 +379,6 @@ void CModuleManager::OnEdictAllocated(edict_t* pEdict)
 void CModuleManager::OnEdictFreed(const edict_t* pEdict)
 {
 	VCALL_ENABLED_MODULES(OnEdictFreed(pEdict));
-}
-
-void CModuleManager::OnEntityCreated(CBaseEntity* pEntity)
-{
-	VCALL_ENABLED_MODULES(OnEntityCreated(pEntity));
-}
-
-void CModuleManager::OnEntitySpawned(CBaseEntity* pEntity)
-{
-	VCALL_ENABLED_MODULES(OnEntitySpawned(pEntity));
-}
-
-void CModuleManager::OnEntityDeleted(CBaseEntity* pEntity)
-{
-	VCALL_ENABLED_MODULES(OnEntityDeleted(pEntity));
 }
 
 void CModuleManager::LevelShutdown()
