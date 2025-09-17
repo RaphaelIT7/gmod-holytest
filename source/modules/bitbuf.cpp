@@ -3,6 +3,7 @@
 #include "module.h"
 #include "lua.h"
 #include "bitbuf.h"
+#include <memory>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -47,7 +48,7 @@ Default__gc(bf_read,
 	bf_read* bf = (bf_read*)pStoredData;
 	if (bf)
 	{
-		delete[] bf->GetBasePointer();
+		free((char*)bf->GetBasePointer());
 		delete bf;
 	}
 )
@@ -260,7 +261,7 @@ LUA_FUNCTION_STATIC(bf_read_ReadBits)
 	int size = PAD_NUMBER( Bits2Bytes(numBits), 4);
 	byte* buffer = (byte*)stackalloc( size );
 	bf->ReadBits(buffer, numBits);
-	LUA->PushString((const char*)buffer);
+	LUA->PushString((const char*)buffer, size);
 
 	return 1;
 }
@@ -302,7 +303,7 @@ LUA_FUNCTION_STATIC(bf_read_ReadBytes)
 	int numBytes = (int)LUA->CheckNumber(2);
 	byte* buffer = (byte*)stackalloc( numBytes );
 	bf->ReadBytes(buffer, numBytes);
-	LUA->PushString((const char*)buffer);
+	LUA->PushString((const char*)buffer, numBytes);
 
 	return 1;
 }
@@ -384,14 +385,26 @@ LUA_FUNCTION_STATIC(bf_read_ReadString)
 {
 	bf_read* bf = Get_bf_read(LUA, 1, true);
 
-	int iSize = 1 << 16;
-	char* pStr = new char[iSize]; // 1 << 16 is 64kb which is the max net message size.
-	if (bf->ReadString(pStr, iSize))
-		LUA->PushString(pStr);
+	constexpr int iSize = 1 << 16; // 1 << 16 is 64kb which is the max net message size.
+	static thread_local std::unique_ptr<char, void(*)(void*)> pTempBuffer(
+		nullptr,
+		free
+	);
+
+	char* pBuffer = pTempBuffer.get();
+	if (!pBuffer) // We try to malloc on each call so that if we only once had an oom and memory got freed we will be back to function
+	{
+		pTempBuffer.reset((char*)malloc(iSize));
+		if (!pTempBuffer)
+			LUA->ThrowError("Failed to allocate temporary buffer!");
+
+		pBuffer = pTempBuffer.get();
+	}
+
+	if (bf->ReadString(pBuffer, iSize))
+		LUA->PushString(pBuffer);
 	else
 		LUA->PushNil();
-
-	delete[] pStr;
 
 	return 1;
 }
@@ -501,7 +514,7 @@ Default__gc(bf_write,
 	bf_write* bf = (bf_write*)pStoredData;
 	if (bf)
 	{
-		delete[] bf->GetBasePointer();
+		free((char*)bf->GetBasePointer());
 		delete bf;
 	}
 )
@@ -590,7 +603,7 @@ LUA_FUNCTION_STATIC(bf_write_SetDebugName)
 {
 	bf_write* pBF = Get_bf_write(LUA, 1, true);
 
-	pBF->SetDebugName(LUA->CheckString(2)); // BUG: Do we need to keep a reference?
+	pBF->SetDebugName(LUA->CheckString(2)); // BUG: Do we need to keep a reference? Note: Yes we do. (ToDo)
 	return 0;
 }
 
@@ -651,8 +664,8 @@ LUA_FUNCTION_STATIC(bf_write_WriteBytes)
 {
 	bf_write* pBF = Get_bf_write(LUA, 1, true);
 
-	const char* pData = LUA->CheckString(2);
-	int iLength = LUA->ObjLen(2);
+	size_t iLength;
+	const char* pData = Util::CheckLString(LUA, 2, &iLength);
 	pBF->WriteBytes(pData, iLength);
 	return 0;
 }
@@ -864,11 +877,13 @@ LUA_FUNCTION_STATIC(bitbuf_CopyReadBuffer)
 	int iSize = pBf->GetNumBytesRead() + pBf->GetNumBytesLeft();
 	int iNewSize = CLAMP_BF(iSize);
 
-	unsigned char* pData = new unsigned char[iNewSize];
-	memcpy(pData, pBf->GetBasePointer(), iSize);
+	unsigned char* cData = (unsigned char*)malloc(iNewSize);
+	if (!cData)
+		LUA->ThrowError("Failed to allocate data for buffer!");
 
-	bf_read* pNewBf = new bf_read;
-	pNewBf->StartReading(pData, iNewSize);
+	memcpy(cData, pBf->GetBasePointer(), iSize);
+
+	bf_read* pNewBf = new bf_read(cData, iNewSize);
 
 	Push_bf_read(LUA, pNewBf);
 
@@ -877,15 +892,18 @@ LUA_FUNCTION_STATIC(bitbuf_CopyReadBuffer)
 
 LUA_FUNCTION_STATIC(bitbuf_CreateReadBuffer)
 {
-	const char* pData = LUA->CheckString(1);
-	int iLength = LUA->ObjLen(1);
+	size_t iLength;
+	const char* pData = Util::CheckLString(LUA, 1, &iLength);
+
 	int iNewLength = CLAMP_BF(iLength);
 
-	unsigned char* cData = new unsigned char[iNewLength];
+	unsigned char* cData = (unsigned char*)malloc(iNewLength);
+	if (!cData)
+		LUA->ThrowError("Failed to allocate data for buffer!");
+
 	memcpy(cData, pData, iLength);
 
-	bf_read* pNewBf = new bf_read;
-	pNewBf->StartReading(cData, iNewLength);
+	bf_read* pNewBf = new bf_read(cData, iNewLength);
 
 	Push_bf_read(LUA, pNewBf);
 
@@ -894,28 +912,29 @@ LUA_FUNCTION_STATIC(bitbuf_CreateReadBuffer)
 
 LUA_FUNCTION_STATIC(bitbuf_CreateWriteBuffer)
 {
+	bf_write* pNewBf = nullptr;
 	if (LUA->IsType(1, GarrysMod::Lua::Type::Number))
 	{
-		int iSize = CLAMP_BF((int)LUA->CheckNumber(1));
-		unsigned char* cData = new unsigned char[iSize];
-
-		bf_write* pNewBf = new bf_write;
-		pNewBf->StartWriting(cData, iSize);
-
-		Push_bf_write(LUA, pNewBf);
+		int iSize = CLAMP_BF((int)LUA->GetNumber(1));
+		unsigned char* cData = (unsigned char*)malloc(iSize);
+		if (!cData)
+			LUA->ThrowError("Failed to allocate data for buffer!");
+		
+		pNewBf = new bf_write(cData, iSize);
 	} else {
-		const char* pData = LUA->CheckString(1);
-		int iLength = LUA->ObjLen(1);
+		size_t iLength;
+		const char* pData = Util::CheckLString(LUA, 1, &iLength);
 		int iNewLength = CLAMP_BF(iLength);
 
-		unsigned char* cData = new unsigned char[iNewLength];
+		unsigned char* cData = (unsigned char*)malloc(iNewLength);
+		if (!cData)
+			LUA->ThrowError("Failed to allocate data for buffer!");
+
 		memcpy(cData, pData, iLength);
 
-		bf_write* pNewBf = new bf_write;
-		pNewBf->StartWriting(cData, iNewLength);
-
-		Push_bf_write(LUA, pNewBf);
+		pNewBf = new bf_write(cData, iNewLength);
 	}
+	Push_bf_write(LUA, pNewBf);
 
 	return 1;
 }

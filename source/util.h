@@ -158,6 +158,16 @@ namespace Util
 		return LUA->IsType(-1, iType);
 	}
 
+	// HolyLib uses lua_checklstring though we'll use the normal interface for now.
+	inline const char* CheckLString(GarrysMod::Lua::ILuaInterface* LUA, int nStackPos, size_t* nOutLength)
+	{
+		const char* pStr = LUA->CheckString(nStackPos);
+		if (nOutLength)
+			*nOutLength = LUA->ObjLen(nStackPos);
+
+		return pStr;
+	}
+
 	// Gmod's functions:
 	extern CBasePlayer* Get_Player(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool unknown);
 	extern CBaseEntity* Get_Entity(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool unknown);
