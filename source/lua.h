@@ -47,6 +47,7 @@ namespace Lua
 		HttpServer,
 		bf_read,
 		bf_write,
+		IGModAudioChannel,
 
 		TOTAL_TYPES,
 	};
