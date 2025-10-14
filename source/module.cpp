@@ -228,6 +228,7 @@ void CModuleManager::LoadModules()
 	RegisterModule(pHttpServerModule);
 	RegisterModule(pHolyTestModule);
 	RegisterModule(pBitBufModule);
+	RegisterModule(pBassModule);
 }
 
 int g_pIDs = 0;
