@@ -32,26 +32,6 @@ CServerPlugin::~CServerPlugin()
 {
 }
 
-#ifdef LIB_HOLYLIB
-void HolyLib_PreLoad()
-#else
-DLL_EXPORT void HolyLib_PreLoad() // ToDo: Make this a CServerPlugin member later!
-#endif
-{
-	if (!Util::ShouldLoad())
-	{
-		Msg("HolyLib already exists? Stopping.\n");
-		return;
-	}
-
-#ifdef LIB_HOLYLIB
-	g_pModuleManager.LoadModules();
-#endif
-
-	g_pModuleManager.SetGhostInj();
-	g_pModuleManager.InitDetour(true);
-}
-
 //---------------------------------------------------------------------------------
 // Purpose: called when the plugin is loaded, load the interface we need from the engine
 //---------------------------------------------------------------------------------
@@ -97,6 +77,7 @@ bool CServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn g
 	Lua::AddDetour();
 	Util::AddDetour();
 	g_pModuleManager.Init();
+	g_pModuleManager.InitDetour(true); // We do not depend on the ghostinj as we don't have things that need to load that early
 	g_pModuleManager.InitDetour(false);
 
 	Msg("--- HolyTest Plugin finished loading ---\n");

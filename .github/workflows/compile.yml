@@ -30,25 +30,9 @@ jobs:
       SOURCESDK_MINIMAL_64XBRANCH: "x86-64-patch-2"
       GARRYSMOD_COMMON: "RaphaelIT7/garrysmod_common"
 
-  build_ghostinj:
-    name: "Build GhostInj"
-    uses: RaphaelIT7/gmod-common-module-base/.github/workflows/compile.yml@workflow
-    with:
-      PROJECT_PATH: "ghostinj-dll/"
-      PROJECT_NAME: "ghostinj"
-      BUILD_64x: "true"
-      LINUX_FILEEXTENTION: "dll"
-      BUILD_WINDOWS: "false"
-      USE_PREFIX: "false"
-      ARTIFACT_EXPIRE: "1"
-      SOURCESDK_MINIMAL: "RaphaelIT7/sourcesdk-minimal"
-      SOURCESDK_MINIMAL_BRANCH: "patch-6"
-      SOURCESDK_MINIMAL_64XBRANCH: "x86-64-patch-2"
-      GARRYSMOD_COMMON: "RaphaelIT7/garrysmod_common"
-
   setup_32x_artifacts:
     name: "Setup 32x Artifact"
-    needs: [build_plugin, build_ghostinj]
+    needs: build_plugin
     runs-on: ubuntu-latest
     container: debian:bullseye
     steps:
@@ -63,11 +47,6 @@ jobs:
         with:
           name: "gmsv_holytest_linux.so"
 
-      - uses: actions/download-artifact@v4
-        name: "Download 32x ghostinj"
-        with:
-          name: "ghostinj.dll"
-
       - name: "Create structure"
         run: |
           mkdir -p garrysmod/lua/bin
@@ -75,10 +54,10 @@ jobs:
 
           mkdir -p garrysmod/addons
           mv holytest.vdf garrysmod/addons
-          tar -czf holytest.tar.gz ghostinj.dll garrysmod/
+          tar -czf holytest.tar.gz garrysmod/
 
           mv gluatests garrysmod/addons
-          tar -czf gluatest.tar.gz ghostinj.dll garrysmod/
+          tar -czf gluatest.tar.gz garrysmod/
 
       - uses: actions/upload-artifact@v4
         name: "Upload tar"
@@ -98,7 +77,7 @@ jobs:
 
   setup_64x_artifacts:
     name: "Setup 64x Artifact"
-    needs: [build_plugin, build_ghostinj]
+    needs: build_plugin
     runs-on: ubuntu-latest
     container: debian:bullseye
     steps:
@@ -113,11 +92,6 @@ jobs:
         with:
           name: "gmsv_holytest_linux64.so (64x)"
 
-      - uses: actions/download-artifact@v4
-        name: "Download 64x ghostinj"
-        with:
-          name: "ghostinj.dll (64x)"
-
       - name: "Create structure"
         run: |
           mkdir -p garrysmod/lua/bin
@@ -125,10 +99,10 @@ jobs:
 
           mkdir -p garrysmod/addons
           mv holytest_64.vdf garrysmod/addons
-          tar -czf holytest.tar.gz ghostinj.dll garrysmod/
+          tar -czf holytest.tar.gz garrysmod/
 
           mv gluatests garrysmod/addons
-          tar -czf gluatest.tar.gz ghostinj.dll garrysmod/
+          tar -czf gluatest.tar.gz garrysmod/
 
       - uses: actions/upload-artifact@v4
         name: "Upload tar"
@@ -158,7 +132,6 @@ jobs:
           - prerelease
     with:
       no-checkout: "true"
-      extra-startup-args: "-usegh"
       download-artifact: "gluatest_32x"
 
   test_build_64x:
@@ -168,7 +141,6 @@ jobs:
     with:
       branch: x86-64
       no-checkout: "true"
-      extra-startup-args: "-usegh"
       download-artifact: "gluatest_64x"
 
   release_update: # If all tests passed, we do a release
