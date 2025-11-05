@@ -125,7 +125,7 @@ jobs:
           prerelease: false
           make_latest: true
 
-      - name: Upload Linux 32x
+      - name: Upload Linux Bundle
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -133,4 +133,25 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: linux/holytest.tar.gz
           asset_name: linux.tar.gz
+          asset_content_type: application/octet-stream
+
+      # Backwards compatibility in case anyone ever used these previously
+      - name: Upload Linux 32x
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux/holytest.tar.gz
+          asset_name: linux32.tar.gz
+          asset_content_type: application/octet-stream
+
+      - name: Upload Linux 64x
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux/holytest.tar.gz
+          asset_name: linux64.tar.gz
           asset_content_type: application/octet-stream
