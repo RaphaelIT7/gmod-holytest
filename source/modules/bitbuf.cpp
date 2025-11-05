@@ -714,8 +714,13 @@ LUA_FUNCTION_STATIC(bf_write_WriteSignedVarInt32)
 LUA_FUNCTION_STATIC(bf_write_WriteSignedVarInt64)
 {
 	bf_write* pBF = Get_bf_write(LUA, 1, true);
-
-	pBF->WriteSignedVarInt64((int64)LUA->CheckNumber(2));
+	
+	if (LUA->IsType(2, GarrysMod::Lua::Type::String))
+	{
+		pBF->WriteSignedVarInt64(strtoull(LUA->GetString(2), NULL, 0));
+	} else {
+		pBF->WriteSignedVarInt64((int64)LUA->CheckNumber(2));
+	}
 	return 0;
 }
 
@@ -730,8 +735,13 @@ LUA_FUNCTION_STATIC(bf_write_WriteVarInt32)
 LUA_FUNCTION_STATIC(bf_write_WriteVarInt64)
 {
 	bf_write* pBF = Get_bf_write(LUA, 1, true);
-
-	pBF->WriteVarInt64((uint64)LUA->CheckNumber(2));
+	
+	if (LUA->IsType(2, GarrysMod::Lua::Type::String))
+	{
+		pBF->WriteVarInt64(strtoull(LUA->GetString(2), NULL, 0));
+	} else {
+		pBF->WriteVarInt64((int64)LUA->CheckNumber(2));
+	}
 	return 0;
 }
 
@@ -867,7 +877,8 @@ LUA_FUNCTION_STATIC(bf_write_WriteString)
 	return 0;
 }
 
-LUA_FUNCTION_STATIC(bf_write_WriteEHandle)
+// Thought they were needed, actually they were not
+/*LUA_FUNCTION_STATIC(bf_write_WriteEHandle)
 {
 	bf_write* pBF = Get_bf_write(LUA, 1, true);
 	CBaseEntity* pEntity = Util::Get_Entity(LUA, 2, false);
@@ -906,7 +917,7 @@ LUA_FUNCTION_STATIC(bf_write_WriteAngle)
 	pBF->WriteFloat(pAng->y);
 	pBF->WriteFloat(pAng->z);
 	return 0;
-}
+}*/
 
 LUA_FUNCTION_STATIC(bf_write_WriteDouble)
 {
@@ -1097,9 +1108,9 @@ void CBitBufModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIni
 		Util::AddFunc(pLua, bf_write_WriteBitCoordMP, "WriteBitCoordMP");
 		Util::AddFunc(pLua, bf_write_WriteString, "WriteString");
 
-		Util::AddFunc(pLua, bf_write_WriteEHandle, "WriteEHandle");
-		Util::AddFunc(pLua, bf_write_WriteAngle, "WriteAngle");
-		Util::AddFunc(pLua, bf_write_WriteVector, "WriteVector");
+		// Util::AddFunc(pLua, bf_write_WriteEHandle, "WriteEHandle");
+		// Util::AddFunc(pLua, bf_write_WriteAngle, "WriteAngle");
+		// Util::AddFunc(pLua, bf_write_WriteVector, "WriteVector");
 		Util::AddFunc(pLua, bf_write_WriteDouble, "WriteDouble");
 	pLua->Pop(1);
 
