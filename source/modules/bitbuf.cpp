@@ -4,6 +4,7 @@
 #include "lua.h"
 #include "bitbuf.h"
 #include <memory>
+#include <player.h>
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -866,6 +867,25 @@ LUA_FUNCTION_STATIC(bf_write_WriteString)
 	return 0;
 }
 
+LUA_FUNCTION_STATIC(bf_write_WriteEntity)
+{
+	bf_write* pBF = Get_bf_write(LUA, 1, true);
+	CBaseEntity* pEntity = Util::Get_Entity(LUA, 2, false);
+
+	long iEncodedEHandle;
+	if(pEntity) {
+		EHANDLE hEnt = pEntity;
+
+		int iSerialNum = hEnt.GetSerialNumber() & ( (1 << NUM_NETWORKED_EHANDLE_SERIAL_NUMBER_BITS) - 1 );
+		iEncodedEHandle = hEnt.GetEntryIndex() | (iSerialNum << MAX_EDICT_BITS);
+	} else {
+		iEncodedEHandle = INVALID_NETWORKED_EHANDLE_VALUE;
+	}
+
+	pBF->WriteLong(iEncodedEHandle);
+	return 0;
+}
+
 static constexpr int MAX_BUFFER_SIZE = 1 << 18;
 static constexpr int MIN_BUFFER_SIZE = 4;
 #define CLAMP_BF(val) MAX(MIN(val + 1, MAX_BUFFER_SIZE), MIN_BUFFER_SIZE)
@@ -1045,6 +1065,7 @@ void CBitBufModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIni
 		Util::AddFunc(pLua, bf_write_WriteBitCoord, "WriteBitCoord");
 		Util::AddFunc(pLua, bf_write_WriteBitCoordMP, "WriteBitCoordMP");
 		Util::AddFunc(pLua, bf_write_WriteString, "WriteString");
+		Util::AddFunc(pLua, bf_write_WriteEntity, "Entity");
 	pLua->Pop(1);
 
 	Util::StartTable(pLua);
