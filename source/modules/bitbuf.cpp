@@ -867,7 +867,7 @@ LUA_FUNCTION_STATIC(bf_write_WriteString)
 	return 0;
 }
 
-LUA_FUNCTION_STATIC(bf_write_WriteEntity)
+LUA_FUNCTION_STATIC(bf_write_WriteEHandle)
 {
 	bf_write* pBF = Get_bf_write(LUA, 1, true);
 	CBaseEntity* pEntity = Util::Get_Entity(LUA, 2, false);
@@ -883,6 +883,37 @@ LUA_FUNCTION_STATIC(bf_write_WriteEntity)
 	}
 
 	pBF->WriteLong(iEncodedEHandle);
+	return 0;
+}
+
+LUA_FUNCTION_STATIC(bf_write_WriteVector)
+{
+	bf_write* pBF = Get_bf_write(LUA, 1, true);
+	Vector* pVec = Get_Vector(LUA, 2, true);
+
+	pBF->WriteFloat(pVec->x);
+	pBF->WriteFloat(pVec->y);
+	pBF->WriteFloat(pVec->z);
+	return 0;
+}
+
+LUA_FUNCTION_STATIC(bf_write_WriteAngle)
+{
+	bf_write* pBF = Get_bf_write(LUA, 1, true);
+	QAngle* pAng = Get_QAngle(LUA, 2, true);
+
+	pBF->WriteFloat(pAng->x);
+	pBF->WriteFloat(pAng->y);
+	pBF->WriteFloat(pAng->z);
+	return 0;
+}
+
+LUA_FUNCTION_STATIC(bf_write_WriteDouble)
+{
+	bf_write* pBF = Get_bf_write(LUA, 1, true);
+	double pNumber = LUA->CheckNumber(2);
+
+	pBF->WriteBytes( &pNumber, sizeof(pNumber) );
 	return 0;
 }
 
@@ -1065,7 +1096,11 @@ void CBitBufModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIni
 		Util::AddFunc(pLua, bf_write_WriteBitCoord, "WriteBitCoord");
 		Util::AddFunc(pLua, bf_write_WriteBitCoordMP, "WriteBitCoordMP");
 		Util::AddFunc(pLua, bf_write_WriteString, "WriteString");
-		Util::AddFunc(pLua, bf_write_WriteEntity, "Entity");
+
+		Util::AddFunc(pLua, bf_write_WriteEHandle, "WriteEHandle");
+		Util::AddFunc(pLua, bf_write_WriteAngle, "WriteAngle");
+		Util::AddFunc(pLua, bf_write_WriteVector, "WriteVector");
+		Util::AddFunc(pLua, bf_write_WriteDouble, "WriteDouble");
 	pLua->Pop(1);
 
 	Util::StartTable(pLua);
