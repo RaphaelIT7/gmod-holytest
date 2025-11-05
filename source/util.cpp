@@ -185,6 +185,7 @@ bool Util::ShouldLoad()
 GMODGet_LuaClass(IRecipientFilter, GarrysMod::Lua::Type::RecipientFilter, "RecipientFilter")
 GMODGet_LuaClass(Vector, GarrysMod::Lua::Type::Vector, "Vector")
 GMODGet_LuaClass(QAngle, GarrysMod::Lua::Type::Angle, "Angle")
+GMODGet_LuaClass(VMatrix, GarrysMod::Lua::Type::Matrix, "Matrix")
 GMODGet_LuaClass(ConVar, GarrysMod::Lua::Type::ConVar, "ConVar")
 
 GMODPush_LuaClass(QAngle, GarrysMod::Lua::Type::Angle)

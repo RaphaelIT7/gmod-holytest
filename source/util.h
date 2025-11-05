@@ -795,8 +795,10 @@ LUA_FUNCTION_STATIC(className ## _GetTable) \
 
 class Vector;
 class QAngle;
+class VMatrix;
 extern Vector* Get_Vector(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError = true);
 extern QAngle* Get_QAngle(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError = true);
+extern VMatrix* Get_VMatrix(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError = true);
 
 class IRecipientFilter;
 extern IRecipientFilter* Get_IRecipientFilter(GarrysMod::Lua::ILuaInterface* LUA, int iStackPos, bool bError);

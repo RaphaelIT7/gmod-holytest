@@ -928,6 +928,17 @@ LUA_FUNCTION_STATIC(bf_write_WriteDouble)
 	return 0;
 }
 
+LUA_FUNCTION_STATIC(bf_write_WriteVMatrix)
+{
+	bf_write* pBF = Get_bf_write(LUA, 1, true);
+	VMatrix* pMatrix = Get_VMatrix(LUA, 2, true);
+
+	// I really don't feel like dealing with all the WriteFloat calls
+	// Lets be simple and efficient, should still work :3
+	pBF->WriteBytes( &pMatrix, sizeof(VMatrix) );
+	return 0;
+}
+
 static constexpr int MAX_BUFFER_SIZE = 1 << 18;
 static constexpr int MIN_BUFFER_SIZE = 4;
 #define CLAMP_BF(val) MAX(MIN(val + 1, MAX_BUFFER_SIZE), MIN_BUFFER_SIZE)
@@ -1112,6 +1123,7 @@ void CBitBufModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIni
 		// Util::AddFunc(pLua, bf_write_WriteAngle, "WriteAngle");
 		// Util::AddFunc(pLua, bf_write_WriteVector, "WriteVector");
 		Util::AddFunc(pLua, bf_write_WriteDouble, "WriteDouble");
+		Util::AddFunc(pLua, bf_write_WriteVMatrix, "WriteVMatrix");
 	pLua->Pop(1);
 
 	Util::StartTable(pLua);
