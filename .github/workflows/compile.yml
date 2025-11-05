@@ -30,53 +30,8 @@ jobs:
       SOURCESDK_MINIMAL_64XBRANCH: "x86-64-patch-2"
       GARRYSMOD_COMMON: "RaphaelIT7/garrysmod_common"
 
-  setup_32x_artifacts:
-    name: "Setup 32x Artifact"
-    needs: build_plugin
-    runs-on: ubuntu-latest
-    container: debian:bullseye
-    steps:
-      - uses: actions/checkout@v4
-        name: "Checkout required files"
-        with:
-          sparse-checkout: |
-            holytest.vdf
-
-      - uses: actions/download-artifact@v4
-        name: "Download 32x plugin"
-        with:
-          name: "gmsv_holytest_linux.so"
-
-      - name: "Create structure"
-        run: |
-          mkdir -p garrysmod/lua/bin
-          mv gmsv_holytest_linux.so garrysmod/lua/bin/
-
-          mkdir -p garrysmod/addons
-          mv holytest.vdf garrysmod/addons
-          tar -czf holytest.tar.gz garrysmod/
-
-          mv gluatests garrysmod/addons
-          tar -czf gluatest.tar.gz garrysmod/
-
-      - uses: actions/upload-artifact@v4
-        name: "Upload tar"
-        with:
-          name: gluatest_32x
-          path: gluatest.tar.gz
-          compression-level: 9
-          retention-days: 1
-
-      - uses: actions/upload-artifact@v4
-        name: "Upload release tar"
-        with:
-          name: holytest_32x
-          path: holytest.tar.gz
-          compression-level: 9
-          retention-days: 1
-
-  setup_64x_artifacts:
-    name: "Setup 64x Artifact"
+  setup_artifact:
+    name: "Setup Artifact"
     needs: build_plugin
     runs-on: ubuntu-latest
     container: debian:bullseye
@@ -86,6 +41,12 @@ jobs:
         with:
           sparse-checkout: |
             holytest_64.vdf
+            holytest.vdf
+
+      - uses: actions/download-artifact@v4
+        name: "Download 32x plugin"
+        with:
+          name: "gmsv_holytest_linux.so"
 
       - uses: actions/download-artifact@v4
         name: "Download 64x plugin"
@@ -95,9 +56,11 @@ jobs:
       - name: "Create structure"
         run: |
           mkdir -p garrysmod/lua/bin
+          mv gmsv_holytest_linux.so garrysmod/lua/bin/
           mv gmsv_holytest_linux64.so garrysmod/lua/bin/
 
           mkdir -p garrysmod/addons
+          mv holytest.vdf garrysmod/addons
           mv holytest_64.vdf garrysmod/addons
           tar -czf holytest.tar.gz garrysmod/
 
@@ -107,7 +70,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         name: "Upload tar"
         with:
-          name: gluatest_64x
+          name: gluatest
           path: gluatest.tar.gz
           compression-level: 9
           retention-days: 1
@@ -115,14 +78,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         name: "Upload release tar"
         with:
-          name: holytest_64x
+          name: holytest
           path: holytest.tar.gz
           compression-level: 9
           retention-days: 1
 
-  test_build_32x:
-    name: "Test 32x branches"
-    needs: setup_32x_artifacts
+  test_build:
+    name: "Test Branches"
+    needs: setup_artifact
     uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
     strategy:
       matrix:
@@ -130,39 +93,24 @@ jobs:
           - live
           - dev
           - prerelease
+          - x86-64
     with:
       no-checkout: "true"
-      download-artifact: "gluatest_32x"
-
-  test_build_64x:
-    name: "Test x86-64 branch"
-    needs: setup_64x_artifacts
-    uses: CFC-Servers/GLuaTest/.github/workflows/run_tests.yml@main
-    with:
-      branch: x86-64
-      no-checkout: "true"
-      download-artifact: "gluatest_64x"
+      download-artifact: "gluatest"
 
   release_update: # If all tests passed, we do a release
     name: "Release Update"
-    needs: [test_build_32x, test_build_64x]
+    needs: test_build
     runs-on: ubuntu-latest
     container: debian:bullseye
     permissions:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
-        name: Download Linux 32x
+        name: Download Linux Build
         with:
-          name: "holytest_32x"
-          path: "linux32/"
-          run-id: ${{inputs.ARTIFACT_ID}}
-
-      - uses: actions/download-artifact@v4
-        name: Download Linux 64x
-        with:
-          name: "holytest_64x"
-          path: "linux64/"
+          name: "holytest"
+          path: "linux/"
           run-id: ${{inputs.ARTIFACT_ID}}
 
       - name: Create Release
@@ -183,16 +131,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: linux32/holytest.tar.gz
-          asset_name: linux32.tar.gz
-          asset_content_type: application/octet-stream
-
-      - name: Upload Linux 64x
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: linux64/holytest.tar.gz
-          asset_name: linux64.tar.gz
+          asset_path: linux/holytest.tar.gz
+          asset_name: linux.tar.gz
           asset_content_type: application/octet-stream
