@@ -1127,7 +1127,7 @@ void CHTTPServerModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServe
 	if (bServerInit)
 		return;
 
-	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::HttpServer, pLua->CreateMetaTable("HttpServer"));
+	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::HttpServer, pLua->CreateMetaTable("holytest_HttpServer"));
 		Util::AddFunc(pLua, HttpServer__tostring, "__tostring");
 		Util::AddFunc(pLua, HttpServer__index, "__index");
 		Util::AddFunc(pLua, HttpServer__newindex, "__newindex");
@@ -1166,7 +1166,7 @@ void CHTTPServerModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServe
 		Util::AddFunc(pLua, HttpServer_AddProxyAddress, "AddProxyAddress");
 	pLua->Pop(1);
 
-	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::HttpResponse, pLua->CreateMetaTable("HttpResponse"));
+	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::HttpResponse, pLua->CreateMetaTable("holytest_HttpResponse"));
 		Util::AddFunc(pLua, HttpResponse__tostring, "__tostring");
 		Util::AddFunc(pLua, HttpResponse__index, "__index");
 		Util::AddFunc(pLua, HttpResponse__newindex, "__newindex");
@@ -1179,7 +1179,7 @@ void CHTTPServerModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServe
 		Util::AddFunc(pLua, HttpResponse_SetStatusCode, "SetStatusCode");
 	pLua->Pop(1);
 
-	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::HttpRequest, pLua->CreateMetaTable("HttpRequest"));
+	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::HttpRequest, pLua->CreateMetaTable("holytest_HttpRequest"));
 		Util::AddFunc(pLua, HttpRequest__gc, "__gc");
 		Util::AddFunc(pLua, HttpRequest__tostring, "__tostring");
 		Util::AddFunc(pLua, HttpRequest__index, "__index");
@@ -1211,12 +1211,12 @@ void CHTTPServerModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServe
 		Util::AddFunc(pLua, httpserver_Destroy, "Destroy");
 		Util::AddFunc(pLua, httpserver_GetAll, "GetAll");
 		Util::AddFunc(pLua, httpserver_FindByName, "FindByName");
-	Util::FinishTable(pLua, "httpserver");
+	Util::FinishTable(pLua, "holytest_httpserver");
 }
 
 void CHTTPServerModule::LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua)
 {
-	Util::NukeTable(pLua, "httpserver");
+	Util::NukeTable(pLua, "holytest_httpserver");
 
 	// HttpServers WILL persist across map changes.
 	DeleteAll_HttpResponse(pLua);

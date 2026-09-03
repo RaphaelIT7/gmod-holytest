@@ -1017,7 +1017,7 @@ void CBitBufModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIni
 	if (bServerInit)
 		return;
 
-	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::bf_read, pLua->CreateMetaTable("bf_read"));
+	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::bf_read, pLua->CreateMetaTable("holytest_bf_read"));
 		Util::AddFunc(pLua, bf_read__tostring, "__tostring");
 		Util::AddFunc(pLua, bf_read__index, "__index");
 		Util::AddFunc(pLua, bf_read__newindex, "__newindex");
@@ -1072,7 +1072,7 @@ void CBitBufModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIni
 		Util::AddFunc(pLua, bf_read_GetData, "GetData");
 	pLua->Pop(1);
 
-	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::bf_write, pLua->CreateMetaTable("bf_write"));
+	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::bf_write, pLua->CreateMetaTable("holytest_bf_write"));
 		Util::AddFunc(pLua, bf_write__tostring, "__tostring");
 		Util::AddFunc(pLua, bf_write__index, "__index");
 		Util::AddFunc(pLua, bf_write__newindex, "__newindex");
@@ -1130,10 +1130,10 @@ void CBitBufModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerIni
 		Util::AddFunc(pLua, bitbuf_CopyReadBuffer, "CopyReadBuffer");
 		Util::AddFunc(pLua, bitbuf_CreateReadBuffer, "CreateReadBuffer");
 		Util::AddFunc(pLua, bitbuf_CreateWriteBuffer, "CreateWriteBuffer");
-	Util::FinishTable(pLua, "bitbuf");
+	Util::FinishTable(pLua, "holytest_bitbuf");
 }
 
 void CBitBufModule::LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua)
 {
-	Util::NukeTable(pLua, "bitbuf");
+	Util::NukeTable(pLua, "holytest_bitbuf");
 }

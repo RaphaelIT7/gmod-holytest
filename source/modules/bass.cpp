@@ -409,7 +409,7 @@ void CBassModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerInit)
 	if (bServerInit)
 		return;
 
-	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::IGModAudioChannel, pLua->CreateMetaTable("IGModAudioChannel"));
+	Lua::GetLuaData(pLua)->RegisterMetaTable(Lua::IGModAudioChannel, pLua->CreateMetaTable("holytest_IGModAudioChannel"));
 		Util::AddFunc(pLua, IGModAudioChannel__tostring, "__tostring");
 		Util::AddFunc(pLua, IGModAudioChannel__gc, "__gc");
 		Util::AddFunc(pLua, IGModAudioChannel__index, "__index");
@@ -458,12 +458,12 @@ void CBassModule::LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerInit)
 	Util::StartTable(pLua);
 		Util::AddFunc(pLua, bass_PlayFile, "PlayFile");
 		Util::AddFunc(pLua, bass_PlayURL, "PlayURL");
-	Util::FinishTable(pLua, "bass");
+	Util::FinishTable(pLua, "holytest_bass");
 }
 
 void CBassModule::LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua)
 {
-	Util::NukeTable(pLua, "bass");
+	Util::NukeTable(pLua, "holytest_bass");
 }
 
 void CBassModule::Shutdown()
