@@ -139,3 +139,8 @@ hook.Add( "GLuaTest_StartedTestRun", "Yes", function( testGroups )
         table.remove( testGroups, i )
     end
 end )
+
+-- This way we can easily copy over new tests from HolyLib without having to rename things
+bitbuf = holytest_bitbuf
+httpserver = holytest_httpserver
+bass = holytest_bass

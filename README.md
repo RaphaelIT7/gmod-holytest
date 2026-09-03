@@ -40,22 +40,22 @@ net.Receive("Example", function(len, ply)
     print("Message contained: " .. net.ReadString())
 end)
 
-local bf = bitbuf.CreateWriteBuffer(64)
+local bf = holytest_bitbuf.CreateWriteBuffer(64)
 bf:WriteUBitLong(0, 8) -- The message type. 0 = Lua net message
 
 bf:WriteUBitLong(util.AddNetworkString("Example"), 16) -- Header for net.ReadHeader
 bf:WriteString("Hello World") -- Message content
 
-local readBF = bitbuf.CreateReadBuffer(bf:GetData()) -- Make it a read buffer.
+local readBF = holytest_bitbuf.CreateReadBuffer(bf:GetData()) -- Make it a read buffer.
 local entity = Entity(0) -- We can use the world but normally we shouldn't.
 local userID = entity:IsPlayer() and entity:UserID() or -1
 holytest.ReceiveClientMessage(userID, entity, readBF, readBF:GetNumBits())
 ```
 
 ### Entire HttpServer module
-The entire HttpServer module from HolyLib was implemented.<br>
+The entire HttpServer module from HolyLib was implemented but renamed to be under `holytest_httpserver`<br>
 All functions can be seen here when searching for `Http`: https://holylib.raphaelit7.com/
 
 ### Entire bitbuf module
-The entire bitbuf module from HolyLib was implemented.<br>
+The entire bitbuf module from HolyLib was implemented but renamed to be under `holytest_bitbuf`<br>
 All functions can be seen here when searching for `bf_`: https://holylib.raphaelit7.com/
