@@ -12,7 +12,7 @@ public:
 	virtual void LuaInit(GarrysMod::Lua::ILuaInterface* pLua, bool bServerInit) OVERRIDE;
 	virtual void LuaShutdown(GarrysMod::Lua::ILuaInterface* pLua) OVERRIDE;
 	virtual const char* Name() { return "holytest"; };
-	virtual int Compatibility() { return LINUX32; };
+	virtual int Compatibility() { return LINUX32 | LINUX64; };
 };
 
 CHolyTestModule g_pHolyTestModule;
