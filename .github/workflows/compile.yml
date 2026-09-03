@@ -26,9 +26,10 @@ jobs:
       BUILD_WINDOWS: "false" # Windows isn't needed right now
       ARTIFACT_EXPIRE: "7"
       SOURCESDK_MINIMAL: "RaphaelIT7/sourcesdk-minimal"
-      SOURCESDK_MINIMAL_BRANCH: "patch-6"
-      SOURCESDK_MINIMAL_64XBRANCH: "x86-64-patch-2"
+      SOURCESDK_MINIMAL_BRANCH: "patch-7"
+      SOURCESDK_MINIMAL_64XBRANCH: "x86-64-patch-3"
       GARRYSMOD_COMMON: "RaphaelIT7/garrysmod_common"
+      GARRYSMOD_COMMON_BRANCH: "holylib"
 
   setup_artifact:
     name: "Setup Artifact"
